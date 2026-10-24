@@ -29,6 +29,11 @@ canvas{display:block;width:100%}
 .legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--ink2);margin-top:8px} .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px}
 .charts{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .note{font-size:12px;color:var(--muted);padding:0 16px 20px}
+.ev{cursor:pointer} .ev:hover{background:var(--card)}
+#detail{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:9}
+#detail .card{background:var(--panel);color:var(--ink);border-radius:12px;max-width:640px;width:100%;max-height:90vh;overflow:auto;padding:20px 22px;border:1px solid var(--line)}
+.stage{display:grid;grid-template-columns:34px 1fr;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)} .stage .n{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:13px;color:#fff}
+.stage b{display:block;font-size:14px} .stage span{font-size:13px;color:var(--ink2)} .grp{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--accent);margin-top:12px;font-weight:700}
 @media (max-width:900px){main{grid-template-columns:1fr}.charts{grid-template-columns:1fr}}
 </style></head><body>
 <header>
@@ -54,7 +59,7 @@ canvas{display:block;width:100%}
       <div class="kpi" id="kT1" hidden><b id="kRun">0</b><span>real leaks running</span></div>
       <div class="kpi" id="kT2" hidden><b id="kHit">0</b><span>alarms within 300 m of a real leak</span></div>
     </div>
-    <h2>Alarms as they happen</h2><div class="log" id="log"><div class="ev sub">Press Play. Guardian watches every sensor each day and raises an alarm when the pattern matches a leak.</div></div>
+    <h2>Alarms as they happen <span style="font-weight:400">(click one for its 8 stages)</span></h2><div class="log" id="log"><div class="ev sub">Press Play. Guardian watches every sensor each day and raises an alarm when the pattern matches a leak.</div></div>
   </aside>
   <div class="charts">
     <section class="panel"><h2>Twin residual at every sensor (cm): measured minus twin, midday</h2><canvas id="cRes" height="220"></canvas></section>
@@ -62,6 +67,7 @@ canvas{display:block;width:100%}
   </div>
 </main>
 <p class="note">Precomputed from one frozen Guardian v5 run on the BattLeDIM L-Town 2019 data (Vrachimis et al. 2022, Zenodo 4017659, CC BY 4.0). Guardian never sees the real leak list; the switch only shows it to you. Advisory only: every action needs an operator's approval.</p>
+<div id="detail" role="dialog" aria-modal="true"><div class="card" id="dcard"></div></div>
 <script src="replay_data.js"></script>
 <script>
 const D=window.REPLAY, N=D.days.length, $=id=>document.getElementById(id);
@@ -113,9 +119,27 @@ function drawPanel(){const d=D.days[day],showT=$("truth").checked,seen=D.alarms.
   $("kRun").textContent=D.truth.filter(t=>t.start<=d&&d<=t.end).length;$("kHit").textContent=seen.filter(a=>a.hit).length+" / "+seen.length;
   const html=seen.slice().reverse().map((a,i)=>{const k=D.alarms.indexOf(a)+1;
     const t=showT?(a.hit?` <span class="ok">✓ ${a.dist} m from real leak ${a.near}</span>`:` <span class="bad">✗ wrong place</span>`):"";
-    return `<div class="ev"><span class="d">${a.day}</span> · <b>#${k}</b> ${LABEL[a.kind]||a.kind} at ${a.node}, about ${a.size} m³/h.${t}</div>`;}).join("");
+    return `<div class="ev" data-k="${k-1}"><span class="d">${a.day}</span> · <b>#${k}</b> ${LABEL[a.kind]||a.kind} at ${a.node}, about ${a.size} m³/h.${t}</div>`;}).join("");
   if(html&&html!==$("log")._h){$("log").innerHTML=html;$("log")._h=html;}}
 function draw(){drawMap();drawCharts();drawPanel();$("day").value=day;}
+// ---------- the 8 stages for one alarm ----------
+function st(n,col,title,text){return `<div class="stage"><div class="n" style="background:${col}">${n}</div><div><b>${title}</b><span>${text}</span></div></div>`;}
+function openAlarm(k){const a=D.alarms[k],g=css("--hit"),o=css("--miss"),b=css("--accent"),m=css("--muted"),showT=$("truth").checked;playing=false;$("play").textContent="Play";
+  const dg=a.diag,cf=a.confirm||{};
+  let h=`<h2 style="margin:0 0 4px;font-size:20px">Alarm #${k+1} · ${a.day}</h2><div class="sub">${LABEL[a.kind]||a.kind} at junction ${a.node}, zone ${a.zone??"?"}</div>`;
+  h+=`<div class="grp">Detect</div>`+st(1,b,"Detect",`The twin's expected pressures and the measured ones kept disagreeing in a leak-like pattern, two nights or more. Estimated size about ${a.size} m³/h.`);
+  h+=st(2,dg?(dg.single?o:g):m,"Diagnose",dg?(dg.single?`The change sits mostly on one sensor (${dg.top}). Check that sensor before sending a crew.`:`The change spreads over ${dg.moved} sensors, as a leak's does, not one faulty sensor.`)+(dg.dflow!=null?` Zone night flow changed by ${dg.dflow>0?"+":""}${dg.dflow} m³/h over the same week.`:""):"Too early in the year to compare two weeks.");
+  h+=`<div class="grp">Prove</div>`+st(3,cf.untestable?m:(cf.ok?g:o),"Confirm the cause (night pressure test)",cf.untestable?"No PRV in this zone (tank-fed zone C): the test cannot run here.":(cf.q==null?"Test nights not available.":(cf.ok?`Confirmed. Pressure lowered 15 m for 15-minute pulses on ${cf.nights[0]} to ${cf.nights[2]}: the network answered like a pressure-sensitive leak (about ${cf.q} m³/h, ${cf.z} standard deviations above noise).`:`Not confirmed. The pulse test on ${cf.nights[0]} to ${cf.nights[2]} showed no leak-like response here (${cf.z} standard deviations). Recheck before digging.`)));
+  h+=st(4,b,"Locate",`Most likely junction ${a.node}; search area: every pipe within 300 m.`+(showT?(a.hit?` <b style="display:inline;color:${g}">Real leak ${a.near} was ${a.dist} m away.</b>`:` <b style="display:inline;color:${o}">No real leak within 300 m.</b>`):""));
+  h+=st(5,b,"Prioritise",`About ${a.prio.m3day} m³ lost per day, about SAR ${a.prio.sarday} per day at SAR 1.7/m³ (desalinated water).`);
+  h+=`<div class="grp">Act</div>`+st(6,m,"Compare options","Isolate, lower pressure, or monitor. <i>Planned: not in frozen v5 yet.</i>")+st(7,m,"Optimise","The lowest safe pressure that keeps every customer above 15 m. <i>Planned.</i>")+st(8,m,"Verify and recommend","Check the plan on a second, independent model, then recommend to the operator. <i>Planned.</i>");
+  h+=`<p class="sub" style="margin-top:12px">Advisory only: the operator approves every action. Stages 2, 3 and 5 are computed for this replay from the same data; the alarms themselves are frozen Guardian v5.</p><button id="dclose" style="margin-top:6px">Close</button>`;
+  $("dcard").innerHTML=h;$("detail").style.display="flex";$("dclose").onclick=()=>$("detail").style.display="none";}
+$("detail").onclick=e=>{if(e.target.id==="detail")$("detail").style.display="none";};
+document.addEventListener("keydown",e=>{if(e.key==="Escape")$("detail").style.display="none";});
+$("log").onclick=e=>{const ev=e.target.closest(".ev[data-k]");if(ev)openAlarm(+ev.dataset.k);};
+$("map").onclick=e=>{const r=$("map").getBoundingClientRect(),{p}=proj($("map").clientWidth,parseFloat($("map").style.height));const d=D.days[day];let best=null;
+  D.alarms.forEach((a,k)=>{if(a.day>d)return;const [x,y]=p(...a.xy),dd=Math.hypot(x-(e.clientX-r.left),y-(e.clientY-r.top));if(dd<14&&(!best||dd<best[0]))best=[dd,k];});if(best)openAlarm(best[1]);};
 // ---------- playback ----------
 function tick(t){if(!playing)return;const dt=(t-last)/1000;last=t;acc+=dt*(+$("speed").value);
   while(acc>=1&&day<N-1){day++;acc-=1;}draw();if(day>=N-1){playing=false;$("play").textContent="Replay";return;}requestAnimationFrame(tick);}
