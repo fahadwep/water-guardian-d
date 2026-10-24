@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Guardian Replay</title>
+<style>
+:root{--bg:#f9f9f7;--panel:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;--line:#e1e0d9;--pipe:#c9c8c2;
+--drop:#e34948;--rise:#2a78d6;--alarm:#e34948;--hit:#008300;--miss:#eb6834;--truth:#6250d6;--accent:#2a78d6;--card:#f1f0ec}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0d0d0d;--panel:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--muted:#898781;--line:#2c2c2a;--pipe:#45443f;
+--drop:#e66767;--rise:#3987e5;--alarm:#e66767;--hit:#0ca30c;--miss:#d95926;--truth:#9085e9;--accent:#3987e5;--card:#242422}}
+:root[data-theme="dark"]{--bg:#0d0d0d;--panel:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--muted:#898781;--line:#2c2c2a;--pipe:#45443f;
+--drop:#e66767;--rise:#3987e5;--alarm:#e66767;--hit:#0ca30c;--miss:#d95926;--truth:#9085e9;--accent:#3987e5;--card:#242422}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,"Segoe UI",sans-serif}
+header{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
+h1{font-size:18px;margin:0} .sub{color:var(--ink2);font-size:13px}
+.date{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;min-width:170px}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+button,select{font:inherit;font-size:14px;padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;min-width:84px}
+label.sw{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--ink2);cursor:pointer}
+.scrub{flex:1 1 300px;display:flex;align-items:center;gap:8px} input[type=range]{width:100%;accent-color:var(--accent)}
+main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:12px;padding:12px 16px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;min-width:0}
+.panel h2{font-size:14px;margin:0 0 8px;color:var(--ink2);font-weight:600}
+canvas{display:block;width:100%}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.kpi{background:var(--card);border-radius:8px;padding:10px} .kpi b{display:block;font-size:24px;font-variant-numeric:tabular-nums} .kpi span{font-size:12px;color:var(--ink2)}
+.log{max-height:420px;overflow:auto;font-size:13px} .ev{padding:8px 4px;border-bottom:1px solid var(--line)} .ev:first-child{animation:flash 1.2s}
+@keyframes flash{from{background:color-mix(in srgb,var(--alarm) 25%,transparent)}to{background:transparent}}
+.ev .d{color:var(--muted);font-variant-numeric:tabular-nums} .ok{color:var(--hit);font-weight:600} .bad{color:var(--miss);font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--ink2);margin-top:8px} .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px}
+.charts{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.note{font-size:12px;color:var(--muted);padding:0 16px 20px}
+@media (max-width:900px){main{grid-template-columns:1fr}.charts{grid-template-columns:1fr}}
+</style></head><body>
+<header>
+  <div><h1>Water Guardian: one year, watched live</h1><div class="sub" id="sub">L-Town 2019 · frozen Guardian v5 · digital twin + night water balance</div></div>
+  <div class="date" id="date">-</div>
+  <div class="controls">
+    <button class="primary" id="play">Play</button>
+    <select id="speed" aria-label="Speed"><option value="1">1 day/s</option><option value="3">3 days/s</option><option value="7" selected>7 days/s</option><option value="15">15 days/s</option></select>
+    <label class="sw"><input type="checkbox" id="truth"> Show the real leaks</label>
+  </div>
+  <div class="scrub"><input type="range" id="day" min="0" value="0" aria-label="Day of the year"></div>
+</header>
+<main>
+  <section class="panel"><h2>Network map</h2><canvas id="map" height="560"></canvas>
+    <div class="legend"><span><span class="dot" style="background:var(--drop)"></span>sensor pressure below the twin</span>
+      <span><span class="dot" style="background:var(--rise)"></span>above the twin</span>
+      <span><span class="dot" style="background:var(--alarm);opacity:.35"></span>alarm + 300 m search area</span>
+      <span id="lgT" hidden><span class="dot" style="background:var(--truth)"></span>real leak (hidden from Guardian)</span></div></section>
+  <aside class="panel">
+    <div class="kpis">
+      <div class="kpi"><b id="kDay">0</b><span>day of 365</span></div>
+      <div class="kpi"><b id="kAl">0</b><span>alarms so far</span></div>
+      <div class="kpi" id="kT1" hidden><b id="kRun">0</b><span>real leaks running</span></div>
+      <div class="kpi" id="kT2" hidden><b id="kHit">0</b><span>alarms within 300 m of a real leak</span></div>
+    </div>
+    <h2>Alarms as they happen</h2><div class="log" id="log"><div class="ev sub">Press Play. Guardian watches every sensor each day and raises an alarm when the pattern matches a leak.</div></div>
+  </aside>
+  <div class="charts">
+    <section class="panel"><h2>Twin residual at every sensor (cm): measured minus twin, midday</h2><canvas id="cRes" height="220"></canvas></section>
+    <section class="panel"><h2>Night water balance per zone (m³/h above normal)</h2><canvas id="cFlow" height="220"></canvas></section>
+  </div>
+</main>
+<p class="note">Precomputed from one frozen Guardian v5 run on the BattLeDIM L-Town 2019 data (Vrachimis et al. 2022, Zenodo 4017659, CC BY 4.0). Guardian never sees the real leak list; the switch only shows it to you. Advisory only: every action needs an operator's approval.</p>
+<script src="replay_data.js"></script>
+<script>
+const D=window.REPLAY, N=D.days.length, $=id=>document.getElementById(id);
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const LABEL={new:"New leak (pressure pattern)",growth:"Known leak grew",relocate:"Location corrected",flow:"Night water balance"};
+let day=0, playing=false, last=0, acc=0;
+$("day").max=N-1;
+// ---------- map geometry ----------
+const xs=D.pipes.flatMap(p=>[p[0],p[2]]), ys=D.pipes.flatMap(p=>[p[1],p[3]]);
+const X0=Math.min(...xs),X1=Math.max(...xs),Y0=Math.min(...ys),Y1=Math.max(...ys);
+function fit(cv){const r=window.devicePixelRatio||1,w=cv.clientWidth,h=cv.height/ (cv._r||1);cv._r=r;cv.width=w*r;cv.height=h*r;cv.style.height=h+"px";
+  const ctx=cv.getContext("2d");ctx.setTransform(r,0,0,r,0,0);return [ctx,w,h];}
+function proj(w,h){const pad=16,s=Math.min((w-2*pad)/(X1-X0),(h-2*pad)/(Y1-Y0));const ox=(w-s*(X1-X0))/2,oy=(h-s*(Y1-Y0))/2;
+  return {s,p:(x,y)=>[ox+(x-X0)*s,h-(oy+(y-Y0)*s)]};}
+function resColor(v){const c=Math.max(-1,Math.min(1,v/4));return c<0?mix(css("--drop"),-c):mix(css("--rise"),c);}
+function mix(hex,a){const n=parseInt(hex.slice(1),16),g=css("--muted"),m=parseInt(g.slice(1),16);
+  const f=(s)=>Math.round(((n>>s)&255)*a+((m>>s)&255)*(1-a));return `rgb(${f(16)},${f(8)},${f(0)})`;}
+function drawMap(){const cv=$("map");const [c,w,h]=fit(cv);const {s,p}=proj(w,h);c.clearRect(0,0,w,h);
+  c.strokeStyle=css("--pipe");c.lineWidth=1;c.beginPath();for(const q of D.pipes){const a=p(q[0],q[1]),b=p(q[2],q[3]);c.moveTo(...a);c.lineTo(...b);}c.stroke();
+  const showT=$("truth").checked, d=D.days[day];
+  if(showT){c.fillStyle=css("--truth");for(const t of D.truth){if(t.start<=d&&d<=t.end){const [x,y]=p(...t.xy),r=4+t.max/4;
+    c.globalAlpha=.9;c.beginPath();c.moveTo(x,y-r);c.lineTo(x+r,y);c.lineTo(x,y+r);c.lineTo(x-r,y);c.closePath();c.fill();}}c.globalAlpha=1;}
+  const res=D.res[day];D.sxy.forEach((q,i)=>{const [x,y]=p(...q);c.fillStyle=resColor(res[i]);c.beginPath();c.arc(x,y,5.5,0,7);c.fill();
+    c.strokeStyle=css("--panel");c.lineWidth=1.5;c.stroke();});
+  D.alarms.forEach((a,k)=>{if(a.day>d)return;const [x,y]=p(...a.xy),age=(Date.parse(d)-Date.parse(a.day))/864e5;
+    if(age<30){c.fillStyle=css("--alarm");c.globalAlpha=age<5?.25:.10;c.beginPath();c.arc(x,y,300*s,0,7);c.fill();c.globalAlpha=1;}   // search area for recent alarms only
+    if(age<5){c.strokeStyle=css("--alarm");c.lineWidth=2;c.globalAlpha=1-age/5;c.beginPath();c.arc(x,y,6+age*6,0,7);c.stroke();c.globalAlpha=1;}
+    c.fillStyle=showT?(a.hit?css("--hit"):css("--miss")):css("--alarm");c.beginPath();c.arc(x,y,7,0,7);c.fill();
+    c.fillStyle="#fff";c.font="bold 9px system-ui";c.textAlign="center";c.textBaseline="middle";c.fillText(k+1,x,y+.5);});}
+// ---------- charts (drawn up to the current day) ----------
+function chart(id,series,colors,unit,marks){const cv=$(id);const [c,w,h]=fit(cv);c.clearRect(0,0,w,h);
+  const L=36,B=20,T=8,Rr=8,all=series.flat().filter(v=>v!=null&&isFinite(v));let lo=Math.min(0,...all),hi=Math.max(0,...all);if(hi-lo<1){hi+=.5;lo-=.5;}
+  const X=i=>L+(w-L-Rr)*i/(N-1),Y=v=>T+(h-T-B)*(hi-v)/(hi-lo);
+  c.strokeStyle=css("--line");c.fillStyle=css("--muted");c.font="11px system-ui";c.lineWidth=1;
+  for(const v of [lo,0,hi]){const y=Y(v);c.beginPath();c.moveTo(L,y);c.lineTo(w-Rr,y);c.stroke();c.textAlign="right";c.textBaseline="middle";c.fillText(v.toFixed(0),L-4,y);}
+  c.textAlign="center";c.textBaseline="top";["Jan","Apr","Jul","Oct"].forEach((m,i)=>c.fillText(m,X(Math.round(i*N/4)),h-B+4));
+  for(const a of marks){const i=D.days.indexOf(a.day);if(i<0||i>day)continue;c.strokeStyle=css("--alarm");c.globalAlpha=.35;c.beginPath();c.moveTo(X(i),T);c.lineTo(X(i),h-B);c.stroke();}c.globalAlpha=1;
+  series.forEach((s,k)=>{c.strokeStyle=colors[k];c.lineWidth=colors.length>4?1:2;c.globalAlpha=colors.length>4?.55:1;c.beginPath();let up=false;
+    for(let i=0;i<=day;i++){const v=s[i];if(v==null||!isFinite(v)){up=false;continue;}const p=[X(i),Y(v)];up?c.lineTo(...p):c.moveTo(...p);up=true;}c.stroke();});c.globalAlpha=1;
+  c.strokeStyle=css("--ink");c.lineWidth=1;c.beginPath();c.moveTo(X(day),T);c.lineTo(X(day),h-B);c.stroke();}
+const resSeries=D.sensors.map((_,j)=>D.res.map(r=>r[j]));
+const flowSeries=D.zones.map((z,k)=>D.flow.map(r=>r[k]==null?null:r[k]-D.norm[z]));
+function drawCharts(){chart("cRes",resSeries,resSeries.map((_,j)=>j%2?css("--rise"):css("--muted")),"cm",D.alarms);
+  chart("cFlow",flowSeries,flowSeries.map((_,k)=>[css("--accent"),css("--miss"),css("--hit")][k%3]),"m3/h",D.alarms.filter(a=>a.kind==="flow"));}
+// ---------- panel ----------
+function drawPanel(){const d=D.days[day],showT=$("truth").checked,seen=D.alarms.filter(a=>a.day<=d);
+  $("date").textContent=new Date(d).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});$("kDay").textContent=day+1;$("kAl").textContent=seen.length;
+  ["kT1","kT2","lgT"].forEach(i=>$(i).hidden=!showT);
+  $("kRun").textContent=D.truth.filter(t=>t.start<=d&&d<=t.end).length;$("kHit").textContent=seen.filter(a=>a.hit).length+" / "+seen.length;
+  const html=seen.slice().reverse().map((a,i)=>{const k=D.alarms.indexOf(a)+1;
+    const t=showT?(a.hit?` <span class="ok">✓ ${a.dist} m from real leak ${a.near}</span>`:` <span class="bad">✗ wrong place</span>`):"";
+    return `<div class="ev"><span class="d">${a.day}</span> · <b>#${k}</b> ${LABEL[a.kind]||a.kind} at ${a.node}, about ${a.size} m³/h.${t}</div>`;}).join("");
+  if(html&&html!==$("log")._h){$("log").innerHTML=html;$("log")._h=html;}}
+function draw(){drawMap();drawCharts();drawPanel();$("day").value=day;}
+// ---------- playback ----------
+function tick(t){if(!playing)return;const dt=(t-last)/1000;last=t;acc+=dt*(+$("speed").value);
+  while(acc>=1&&day<N-1){day++;acc-=1;}draw();if(day>=N-1){playing=false;$("play").textContent="Replay";return;}requestAnimationFrame(tick);}
+$("play").onclick=()=>{if(day>=N-1){day=0;}playing=!playing;$("play").textContent=playing?"Pause":"Play";if(playing){last=performance.now();acc=0;requestAnimationFrame(tick);}};
+$("day").oninput=e=>{day=+e.target.value;draw();};$("truth").onchange=()=>{$("log")._h=null;draw();};
+window.addEventListener("resize",draw);matchMedia("(prefers-color-scheme: dark)").addEventListener("change",draw);
+$("sub").textContent=D.name+" · frozen Guardian v5 · digital twin + night water balance";draw();
+</script></body></html>
