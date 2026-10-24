@@ -1,0 +1,30 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Water Guardian demo</title><style>:root{--bg:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--line:#e1e0d9;--card:#f3f2ee;--accent:#2a78d6}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--line:#2c2c2a;--card:#242422;--accent:#3987e5}}
+:root[data-theme="dark"]{--bg:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--line:#2c2c2a;--card:#242422;--accent:#3987e5}
+body{font-family:system-ui,"Segoe UI",sans-serif;max-width:980px;margin:0 auto;padding:24px 16px 48px;background:var(--bg);color:var(--ink);line-height:1.5}
+h1{font-size:26px;margin:8px 0} h2{font-size:19px;margin-top:32px} p,li{color:var(--ink2)} a{color:var(--accent)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:18px 0}
+.card{background:var(--card);border-radius:8px;padding:14px} .card b{display:block;font-size:26px;color:var(--ink)}
+img{max-width:100%;height:auto;border-radius:6px;background:#fff} table{border-collapse:collapse;width:100%;font-size:14px}
+td,th{border-bottom:1px solid var(--line);padding:6px;text-align:left} .wrap{overflow-x:auto} .small{font-size:13px}</style></head><body><h1>Water Guardian</h1>
+<p>A digital twin of a water network that detects leaks early, points crews to a 300 m search area, and suggests a night
+pressure test before digging. Advisory only: operators approve every action. Built for the IECE 2026 Engineering
+Hackathon by the ChemE Club, Jubail Industrial College.</p>
+<div class="cards"><div class="card"><b>71%</b>of the maximum possible water saved on 10 unseen test years (previous version 58%, simple baseline 42%)</div>
+<div class="card"><b>7 in 10</b>leaks found (previous version 5 in 10)</div>
+<div class="card"><b>8 in 10</b>alarms with a real leak inside the 300 m search area</div></div>
+<h2>Try the reports</h2><ul>
+<li><a href="ltown_2019.html">L-Town 2019 report</a>: a full year of the BattLeDIM benchmark network, alarm table, search areas and map (frozen Guardian v5).</li>
+<li><a href="bktown.html">BKTown real-network test</a>: 17 real hydrant openings in Belgium, located with pressure loggers only.</li></ul>
+<h2>Results</h2>
+<img src="figures/1_headline_savings.png" alt="Share of the maximum saved: 71% new, 58% previous, 42% baseline">
+<img src="figures/3_every_year.png" alt="Share saved in each of the 10 test years">
+<img src="figures/4_tradeoff_alarms.png" alt="Savings versus wrong-place alarms">
+<img src="figures/5_search_area.png" alt="Search area hit rate">
+<h2>How the numbers were made</h2>
+<p>The method was developed on development years only, then frozen (code fingerprints recorded), and only then tested once
+on fresh simulated years that it had never seen, scored with the official BattLeDIM rules. The test years come from our
+copy of the organisers' simulator (it reproduces the official 2019 data to within 3 mm). The new version raises more
+wrong-place alarms than the previous one (about 28 a year against 8); a lean setting halves that for slightly lower savings.</p>
+<p class="small">L-Town and BattLeDIM: Vrachimis et al. 2022, JWRPM, doi 10.1061/(ASCE)WR.1943-5452.0001601; data Zenodo 4017659 (CC BY 4.0).
+BKTown: Mazaev et al. 2023, Water Supply; data Zenodo 7255403 (CC BY 4.0).</p></body></html>
