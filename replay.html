@@ -33,7 +33,7 @@ canvas{display:block;width:100%}
 .note{font-size:12px;color:var(--muted);padding:0 16px 20px}
 .ev{cursor:pointer} .ev:hover{background:var(--card)}
 .strip{display:flex;gap:6px;align-items:stretch;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel);overflow-x:auto}
-.strip .lab{font-size:12px;color:var(--ink2);min-width:170px;align-self:center} .chip{flex:1 0 96px;border-radius:8px;padding:6px 8px;background:var(--card);color:var(--muted);font-size:12px;line-height:1.25;border:1px solid var(--line);transition:all .3s}
+.strip .lab{font-size:12px;color:var(--ink2);min-width:150px;max-width:190px;align-self:center} .chip{flex:1 1 0;min-width:78px;border-radius:8px;padding:6px 8px;background:var(--card);color:var(--muted);font-size:12px;line-height:1.25;border:1px solid var(--line);transition:all .3s}
 .chip b{display:block;font-size:13px} .chip.on{background:var(--accent);border-color:var(--accent);color:#fff} .chip.ok{background:var(--hit);border-color:var(--hit);color:#fff} .chip.bad{background:var(--miss);border-color:var(--miss);color:#fff} .chip.plan{opacity:.55;border-style:dashed}
 #toast{position:fixed;right:16px;bottom:16px;max-width:360px;background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--alarm);border-radius:10px;padding:12px 14px;font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.25);opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;z-index:8}
 #toast.show{opacity:1;transform:none}
@@ -43,7 +43,7 @@ canvas{display:block;width:100%}
 .stage{display:grid;grid-template-columns:34px 1fr;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)} .stage .n{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:13px;color:#fff}
 .stage b{display:block;font-size:14px} .stage span{font-size:13px;color:var(--ink2)} .grp{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--accent);margin-top:12px;font-weight:700}
 .mapwrap{position:relative}
-#story{position:absolute;left:12px;right:12px;bottom:12px;max-width:540px;background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:12px;padding:14px 16px;box-shadow:0 8px 28px rgba(0,0,0,.28);display:none;z-index:5}
+#story{position:absolute;left:12px;bottom:12px;width:calc(100% - 24px);max-width:520px;background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:12px;padding:14px 16px;box-shadow:0 8px 28px rgba(0,0,0,.28);display:none;z-index:5}
 #story .step{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--accent);font-weight:700} #story h3{margin:4px 0 6px;font-size:18px;font-family:"Readex Pro","IBM Plex Sans",system-ui,sans-serif}
 #story p{margin:0 0 10px;font-size:14px;line-height:1.45;color:var(--ink2)} #story p b{color:var(--ink)} #story .row{display:flex;gap:8px;flex-wrap:wrap}
 #tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12.5px;line-height:1.35;padding:6px 9px;border-radius:7px;max-width:260px;z-index:7;display:none;box-shadow:0 4px 14px rgba(0,0,0,.25)}
@@ -51,6 +51,9 @@ canvas{display:block;width:100%}
 .howgrid{display:grid;grid-template-columns:28px 1fr;gap:9px 10px;align-items:start;font-size:14px;color:var(--ink2);margin:10px 0} .howgrid b{color:var(--ink)}
 .sym{width:22px;height:22px;display:grid;place-items:center}
 @media (max-width:900px){main{grid-template-columns:1fr}.charts{grid-template-columns:1fr}}
+@media (max-width:700px){.strip{flex-wrap:wrap}.strip .lab{flex:1 0 100%;min-width:0;max-width:none}#toast{left:12px;right:12px;max-width:none}.chip{flex:1 0 calc(25% - 6px);padding:5px 6px;font-size:11px}.chip b{font-size:12px}
+  #story{position:static;margin-top:10px;max-width:none;width:auto;box-shadow:none}.date{font-size:24px;min-width:0}header{padding:12px}main{padding:12px;gap:12px}}
+@media (min-width:1500px){body{font-size:17px}.legend,.ev,.log{font-size:14px}.chip{font-size:13px}.chip b{font-size:15px}.panel h2{font-size:15px}.kpi span{font-size:14px}#story p{font-size:16px}#story h3{font-size:22px}}
 </style></head><body>
 <header>
   <div><h1><span class="brand"></span>Water Guardian · one year, watched live</h1><div class="sub" id="sub">L-Town 2019 · frozen Guardian v5 · digital twin + night water balance</div></div>
@@ -100,14 +103,15 @@ $("day").max=N-1;
 // ---------- map geometry ----------
 const xs=D.pipes.flatMap(p=>[p[0],p[2]]), ys=D.pipes.flatMap(p=>[p[1],p[3]]);
 const X0=Math.min(...xs),X1=Math.max(...xs),Y0=Math.min(...ys),Y1=Math.max(...ys);
-function fit(cv){const r=window.devicePixelRatio||1,w=cv.clientWidth,h=cv.height/ (cv._r||1);cv._r=r;cv.width=w*r;cv.height=h*r;cv.style.height=h+"px";
+function fit(cv,hh){const r=window.devicePixelRatio||1,w=cv.clientWidth,h=hh||cv.height/ (cv._r||1);cv._r=r;cv.width=w*r;cv.height=h*r;cv.style.height=h+"px";
   const ctx=cv.getContext("2d");ctx.setTransform(r,0,0,r,0,0);return [ctx,w,h];}
 function proj(w,h){const pad=16,s=Math.min((w-2*pad)/(X1-X0),(h-2*pad)/(Y1-Y0));const ox=(w-s*(X1-X0))/2,oy=(h-s*(Y1-Y0))/2;
   return {s,p:(x,y)=>[ox+(x-X0)*s,h-(oy+(y-Y0)*s)]};}
 function resColor(z){if(Math.abs(z)<3.5)return css("--muted");const c=Math.min(1,(Math.abs(z)-3.5)/4+.4);return z<0?mix(css("--drop"),c):mix(css("--rise"),c);}   // grey unless it changed this week
 function mix(hex,a){const n=parseInt(hex.slice(1),16),g=css("--muted"),m=parseInt(g.slice(1),16);
   const f=(s)=>Math.round(((n>>s)&255)*a+((m>>s)&255)*(1-a));return `rgb(${f(16)},${f(8)},${f(0)})`;}
-function drawMap(){const cv=$("map");const [c,w,h]=fit(cv);const {s,p}=proj(w,h);c.clearRect(0,0,w,h);
+const mapH=w=>Math.round(Math.min(620,w*(Y1-Y0)/(X1-X0)+40,Math.max(300,innerHeight-250)));   // fits phones and 720p projectors
+function drawMap(){const cv=$("map");const [c,w,h]=fit(cv,mapH(cv.clientWidth));const {s,p}=proj(w,h);c.clearRect(0,0,w,h);
   c.strokeStyle=css("--pipe");c.lineWidth=.8;c.lineCap="round";c.beginPath();for(const q of D.pipes){const a=p(q[0],q[1]),b=p(q[2],q[3]);c.moveTo(...a);c.lineTo(...b);}c.stroke();
   const showT=$("truth").checked, d=D.days[day];
   if(showT){c.fillStyle=css("--truth");for(const t of D.truth){if(t.start<=d&&d<=t.end){const [x,y]=p(...t.xy),r=4+t.max/4;
@@ -188,7 +192,7 @@ function drawStrip(){const d=D.days[day],seen=D.alarms.filter(a=>a.day<=d);const
   else if(age>=1)$("ch2").classList.add("on");
   $("slab").innerHTML=`<b>Alarm #${k+1}</b> · ${a.node}<br>`+(age<1?"detected today":age<4?"running the night pressure test…":(cf.untestable?"no PRV here: test skipped":(cf.ok?"confirmed by the night test":"not confirmed: recheck before digging")));}
 let lastSeen=-1;function toast(){const d=D.days[day],n=D.alarms.filter(a=>a.day<=d).length;
-  if(playing&&n>lastSeen&&lastSeen>=0){const a=D.alarms[n-1];$("toast").innerHTML=`<b>Alarm #${n}</b> · ${a.day}<br>${LABEL[a.kind]||a.kind} near ${a.node}, about ${a.size} m³/h. Running the night pressure test…`;
+  if(playing&&story==null&&n>lastSeen&&lastSeen>=0){   // story mode explains alarms in its captions insteadconst a=D.alarms[n-1];$("toast").innerHTML=`<b>Alarm #${n}</b> · ${a.day}<br>${LABEL[a.kind]||a.kind} near ${a.node}, about ${a.size} m³/h. Running the night pressure test…`;
     $("toast").classList.add("show");clearTimeout(window._tt);window._tt=setTimeout(()=>$("toast").classList.remove("show"),2600);}lastSeen=n;}
 function summary(){const A=D.alarms,near=A.filter(a=>a.hit),wrong=A.filter(a=>!a.hit),conf=x=>x.filter(a=>(a.confirm||{}).ok).length;
   const loss=A.reduce((s,a)=>s+a.prio.m3day,0);
@@ -212,10 +216,15 @@ function openAlarm(k){const a=D.alarms[k],g=css("--hit"),o=css("--miss"),b=css("
   h+=`<p class="sub" style="margin-top:12px">Advisory only: the operator approves every action. Stages 2, 3 and 5 are computed for this replay from the same data; the alarms themselves are frozen Guardian v5.</p><button id="dclose" style="margin-top:6px">Close</button>`;
   $("dcard").innerHTML=h;$("detail").style.display="flex";$("dclose").onclick=()=>$("detail").style.display="none";}
 $("detail").onclick=e=>{if(e.target.id==="detail")$("detail").style.display="none";};
-document.addEventListener("keydown",e=>{if(e.key==="Escape")$("detail").style.display="none";});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){$("detail").style.display="none";return;}
+  if(e.target.closest("input,select,button")&&e.key!==" ")return;if($("detail").style.display==="flex")return;   // presenter keys: space play/pause, arrows step, s story, t truth
+  if(e.key===" "){e.preventDefault();const g=$("story").style.display==="block"&&$("sGo");(g||$("play")).click();}
+  else if(e.key==="ArrowRight"||e.key==="ArrowLeft"){day=Math.max(0,Math.min(N-1,day+(e.key==="ArrowRight"?1:-1)*(e.shiftKey?7:1)));draw();}
+  else if(e.key==="s")startStory();else if(e.key==="t"){$("truth").checked=!$("truth").checked;$("truth").onchange();}});
 $("log").onclick=e=>{const ev=e.target.closest(".ev[data-k]");if(ev)openAlarm(+ev.dataset.k);};
 $("map").onclick=e=>{const r=$("map").getBoundingClientRect(),{p}=proj($("map").clientWidth,parseFloat($("map").style.height));const d=D.days[day];let best=null;
-  D.alarms.forEach((a,k)=>{if(a.day>d)return;const [x,y]=p(...a.xy),dd=Math.hypot(x-(e.clientX-r.left),y-(e.clientY-r.top));if(dd<14&&(!best||dd<best[0]))best=[dd,k];});if(best)openAlarm(best[1]);};
+  D.alarms.forEach((a,k)=>{if(a.day>d)return;const [x,y]=p(...a.xy),dd=Math.hypot(x-(e.clientX-r.left),y-(e.clientY-r.top));if(dd<14&&(!best||dd<best[0]))best=[dd,k];});if(best){openAlarm(best[1]);return;}
+  $("map").onmousemove(e);clearTimeout(window._tp);window._tp=setTimeout(()=>tipAt(null,null),2500);};
 // ---------- story mode: plays the year and stops at key moments (numbers read from the data) ----------
 const fmtD=s=>new Date(s).toLocaleDateString("en-GB",{day:"numeric",month:"short"}), sar=n=>n.toLocaleString("en-GB");
 const TRUTH=Object.fromEntries(D.truth.map(t=>[t.pipe,t]));
@@ -228,13 +237,15 @@ const MOMENTS=[   // alarm number (1-based) and how many days after it to stop, 
   {n:23,lag:4,title:"A wrong alarm, caught before digging",text:(a,cf,t)=>`Not every alarm is right. Alarm #23 points at junction ${a.node}, but no real leak is within 300 m (the nearest, ${a.near}, started that day ${a.dist} m away). The night pressure test finds <b>no leak-like response</b> (${cf.z} standard deviations), so Guardian advises: recheck, do not send a crew yet. This is why Guardian proves the cause before digging.`},
   {n:25,lag:4,title:"Ten days later: found",text:(a,cf,t)=>`As ${a.near} keeps leaking, the pattern becomes clear. Alarm #25 on <b>${fmtD(a.day)}</b> puts it <b>${a.dist} m</b> from the real leak, and this time the night test confirms it. Over the whole year the test confirmed ${YEAR.nearOk} of the ${YEAR.near} alarms near real leaks and only ${YEAR.wrongOk} of the ${YEAR.wrong} wrong-place alarms.`}];
 MOMENTS.forEach(m=>{m.k=m.n-1;m.at=D.days.indexOf(plusDays(D.alarms[m.k].day,m.lag));});
-function showStory(html){$("story").innerHTML=html;$("story").style.display="block";}
+function showStory(html){$("story").innerHTML=html;$("story").style.display="block";if(innerWidth<=700)$("story").scrollIntoView({block:"nearest",behavior:"smooth"});}
 function hideStory(){$("story").style.display="none";}
-function storyIntro(){showStory(`<div class="step">Story mode · 4 stops</div><h3>One year in a town with hidden leaks</h3>
+function storyIntro(){placeStory([X1,Y0]);showStory(`<div class="step">Story mode · 4 stops</div><h3>One year in a town with hidden leaks</h3>
   <p>Guardian sees only ${D.sensors.length} pressure sensors and the zone flow meters, compared each day with its digital twin. We show you the <b>real leaks</b> (purple diamonds) so you can judge it; Guardian never sees them. The year stops at four moments.</p>
   <div class="row"><button class="primary" id="sGo">Start</button><button id="sEnd">Leave story</button></div>`);
   $("sGo").onclick=()=>{hideStory();go();};$("sEnd").onclick=endStory;}
-function storyStop(i){const m=MOMENTS[i],a=D.alarms[m.k];focus=m.k;draw();
+function placeStory(xy){const st=$("story").style,cv=$("map"),{p}=proj(cv.clientWidth,parseFloat(cv.style.height)),[x,y]=p(...xy);   // corner away from the alarm
+  const right=x<cv.clientWidth/2,top=y>parseFloat(cv.style.height)/2;st.left=right?"auto":"12px";st.right=right?"12px":"auto";st.top=top?"12px":"auto";st.bottom=top?"auto":"12px";}
+function storyStop(i){const m=MOMENTS[i],a=D.alarms[m.k];focus=m.k;draw();placeStory(a.xy);
   showStory(`<div class="step">Stop ${i+1} of ${MOMENTS.length} · ${fmtD(D.days[day])}</div><h3>${m.title}</h3><p>${m.text(a,a.confirm||{},TRUTH[a.near]||{})}</p>
   <div class="row"><button class="primary" id="sGo">${i+1<MOMENTS.length?"Continue":"Play to the end"}</button><button id="sOpen">See its 8 stages</button><button id="sEnd">Leave story</button></div>`);
   $("sGo").onclick=()=>{hideStory();focus=null;story=i+1;go();};$("sOpen").onclick=()=>openAlarm(m.k);$("sEnd").onclick=endStory;}
@@ -265,6 +276,7 @@ function help(){playing=false;$("play").textContent="Play";const sw=(st,inner)=>
   ${sw("",`<polyline points="2,15 9,14 13,8 20,7" fill="none" stroke="${css("--miss")}" stroke-width="2"/>`)}<div><b>Right</b>: night water balance, how much more water each zone uses at night (when almost everyone sleeps) than its normal. A steady rise means a leak.</div>
   ${sw("",`<line x1="11" y1="2" x2="11" y2="20" stroke="${css("--alarm")}" stroke-width="1.5" opacity=".6"/>`)}<div><b>Thin red lines</b>: the days alarms were raised. Hover a graph for the exact numbers.</div></div>
   <div class="grp">The strip at the top</div><p class="sub" style="margin:6px 0">Each alarm walks through Guardian's 8 stages: detect, diagnose, confirm with a night pressure test, locate, prioritise; then compare options, find the lowest safe pressure, and verify on a second model.</p>
+  <p class="sub" style="margin:6px 0">Presenting? Keys: <b>space</b> play / pause / continue, <b>← →</b> one day (shift: a week), <b>s</b> story mode, <b>t</b> show the real leaks.</p>
   <button class="primary" id="hStory">Start story mode</button> <button id="dclose">Close</button>`;
   $("detail").style.display="flex";$("dclose").onclick=()=>$("detail").style.display="none";$("hStory").onclick=()=>{$("detail").style.display="none";startStory();};}
 $("helpBtn").onclick=help;
