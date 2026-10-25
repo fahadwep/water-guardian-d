@@ -90,7 +90,7 @@ canvas{display:block;width:100%}
     <section class="panel"><h2>Night water balance per zone (m³/h above normal)</h2><canvas id="cFlow" height="220"></canvas><div class="legend" id="lgFlow"></div></section>
   </div>
 </main>
-<p class="note">Precomputed from one frozen Guardian v5 run on the BattLeDIM L-Town 2019 data (Vrachimis et al. 2022, Zenodo 4017659, CC BY 4.0). Guardian never sees the real leak list; the switch only shows it to you. Advisory only: every action needs an operator's approval.</p>
+<p class="note"><span id="credit">Precomputed from one frozen Guardian v5 run on the BattLeDIM L-Town 2019 data (Vrachimis et al. 2022, Zenodo 4017659, CC BY 4.0).</span> Guardian never sees the real leak list; the switch only shows it to you. Advisory only: every action needs an operator's approval.</p>
 <div id="detail" role="dialog" aria-modal="true"><div class="card" id="dcard"></div></div>
 <script src="replay_data.js"></script>
 <script>
@@ -162,13 +162,13 @@ function bandChart(id){const cv=$(id);const [c,w,h]=fit(cv);c.clearRect(0,0,w,h)
   const line=(f,col,lw)=>{c.strokeStyle=col;c.lineWidth=lw;c.beginPath();for(let i=0;i<=day;i++){const p=[X(i),Y(f(i))];i?c.lineTo(...p):c.moveTo(...p);}c.stroke();};
   line(i=>D.res[i][worst[day]],css("--alarm"),1.2);line(i=>BAND.med[i],css("--accent"),2.4);
   c.strokeStyle=css("--ink");c.lineWidth=1;c.beginPath();c.moveTo(X(day),T);c.lineTo(X(day),h-B);c.stroke();
-  c.font="12px 'IBM Plex Sans',system-ui";c.textAlign="left";c.textBaseline="top";c.fillStyle=css("--accent");c.fillText("— typical sensor (shaded: spread of all 33)",L,4);
+  c.font="12px 'IBM Plex Sans',system-ui";c.textAlign="left";c.textBaseline="top";c.fillStyle=css("--accent");c.fillText(`— typical sensor (shaded: spread of all ${D.sensors.length})`,L,4);
   c.fillStyle=css("--alarm");c.fillText("— most-changed sensor today: "+D.sensors[worst[day]],L,20);}
 function drawCharts(){bandChart("cRes");
   chart("cFlow",flowSeries,FCOL(),"m3/h",D.alarms.filter(a=>a.kind==="flow"));
   $("lgFlow").innerHTML=D.zones.map((z,k)=>`<span><span class="dot" style="background:${FCOL()[k]}"></span>${ZNAME[z]||z}</span>`).join("");}
 const FCOL=()=>D.zones.map((_,k)=>[css("--accent"),css("--miss"),css("--hit")][k%3]);
-const ZNAME={zone0:"Zone C (tank-fed)",zone1:"Zones A+B (fed through pressure-reducing valves)"};
+const ZNAME=Object.keys(D.zone_names||{}).length?D.zone_names:(D.zones.length===1?{[D.zones[0]]:"Whole network"}:{zone0:"Zone C (tank-fed)",zone1:"Zones A+B (fed through pressure-reducing valves)"});
 // ---------- panel ----------
 function drawPanel(){const d=D.days[day],showT=$("truth").checked,seen=D.alarms.filter(a=>a.day<=d);
   $("date").textContent=new Date(d).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});$("kDay").textContent=day+1;$("kAl").textContent=seen.length;
@@ -205,7 +205,7 @@ function recLine(A){const c=r=>A.filter(a=>a.act&&a.act.rec===r).length,pv=A.fil
   return `<p class="sub">Guardian's advice over the year: ${c("isolate")} isolate and repair now, ${c("pressure")} lower pressure until the repair, ${c("repair")} schedule the repair, ${c("recheck")} recheck before digging. Pressure plans passed the second-model check for ${pv.length} alarms, cutting their leaks by ${pct(pv.reduce((s,a)=>s+a.act.ver.m3day,0),pv.reduce((s,a)=>s+a.act.ver.m3day0,0))}% on average while every junction kept at least 16 m on both models (15 m plus a 1 m safety margin).</p>`;}
 function summary(){const A=D.alarms,near=A.filter(a=>a.hit),wrong=A.filter(a=>!a.hit),conf=x=>x.filter(a=>(a.confirm||{}).ok).length;
   const loss=A.reduce((s,a)=>s+a.prio.m3day,0);
-  $("dcard").innerHTML=`<h2 style="margin:0 0 6px">One year of Guardian v5: L-Town 2019</h2><div class="sub">Frozen v5, one run, never tuned on this year. The real leak list was hidden from Guardian.</div>
+  $("dcard").innerHTML=`<h2 style="margin:0 0 6px">One year of Guardian v5: ${D.name}</h2><div class="sub">Frozen v5, one run, never tuned on this year. The real leak list was hidden from Guardian.</div>
   <div class="sumgrid"><div><div class="big">${A.length}</div>alarms raised</div><div><div class="big">${near.length}</div>within 300 m of a real leak</div>
   <div><div class="big">${conf(near)} / ${near.length}</div>of those confirmed by the night pressure test</div><div><div class="big">${wrong.filter(a=>(a.confirm||{}).z!=null&&!a.confirm.ok).length} / ${wrong.length}</div>wrong-place alarms caught by the test before digging</div></div>${recLine(A)}
   <p class="sub">Click any alarm in the log to walk through its 8 stages, or press <b>Story mode</b> for a guided tour of four key moments. Stages 6–8 compare the options, find the lowest safe pressure on the twin and check it on a second model.</p>
@@ -254,11 +254,20 @@ const MOMENTS=[   // alarm number (1-based) and how many days after it to stop, 
   {n:12,lag:4,title:"A large summer leak, pinpointed",text:(a,cf,t)=>`Pipe ${a.near} starts leaking on <b>${fmtD(t.start)}</b>, growing to about ${Math.round(t.max)} m³/h. Guardian raises alarm #12 on <b>${fmtD(a.day)}</b> and the night test confirms it (${cf.z} standard deviations above noise). The real leak is <b>${a.dist} m</b> away: inside the 300 m search area. Priority: about ${a.prio.currency} ${sar(a.prio.cost)} of desalinated water a day.`},
   {n:23,lag:4,title:"A wrong alarm, caught before digging",text:(a,cf,t)=>`Not every alarm is right. Alarm #23 points at junction ${a.node}, but no real leak is within 300 m (the nearest, ${a.near}, started that day ${a.dist} m away). The night pressure test finds <b>no leak-like response</b> (${cf.z} standard deviations), so Guardian advises: recheck, do not send a crew yet. This is why Guardian proves the cause before digging.`},
   {n:25,lag:4,title:"Ten days later: found",text:(a,cf,t)=>`As ${a.near} keeps leaking, the pattern becomes clear. Alarm #25 on <b>${fmtD(a.day)}</b> puts it <b>${a.dist} m</b> from the real leak, and this time the night test confirms it. Over the whole year the test confirmed ${YEAR.nearOk} of the ${YEAR.near} alarms near real leaks and only ${YEAR.wrongOk} of the ${YEAR.wrong} wrong-place alarms.`}];
+if(D.story_auto){   // other towns: pick the moments from the data
+  const A=D.alarms.map((a,k)=>({...a,k})),pick=[],used=new Set(),add=(a,title,text)=>{if(a&&!used.has(a.k)){used.add(a.k);pick.push({n:a.k+1,lag:4,title,text});}};
+  const hits=A.filter(a=>a.hit);
+  add(hits.find(a=>(a.confirm||{}).ok)||hits[0],"A real leak, found",(a,cf,t)=>`Pipe ${a.near} starts leaking on <b>${fmtD(t.start)}</b> (up to ${t.max} m³/h). Guardian raises alarm #${D.alarms.indexOf(a)+1} on <b>${fmtD(a.day)}</b>; its best spot is <b>${a.dist} m</b> from the real leak.`+(cf.ok?` The night pressure test confirms it.`:cf.q!=null?` The night pressure test does not confirm it (${cf.z} standard deviations): small leaks are hard to prove.`:""));
+  add(hits.slice().sort((x,y)=>y.prio.m3day-x.prio.m3day)[0],"The costliest leak",(a,cf,t)=>`Alarm #${D.alarms.indexOf(a)+1}: about ${a.prio.m3day} m³ lost per day. The real leak (${a.near}) is ${a.dist} m from Guardian's spot.`);
+  const wr=A.filter(a=>!a.hit); add(wr.find(a=>(a.confirm||{}).q!=null&&!a.confirm.ok)||wr[0],"Not every alarm is right",(a,cf,t)=>`Alarm #${D.alarms.indexOf(a)+1} points at ${a.node}, but no real leak is within 300 m.`+(cf.q!=null&&!cf.ok?` The night test finds no leak-like response.`:""));
+  add(A.find(a=>a.act&&a.act.ver&&a.act.ver.ok&&a.hit&&!used.has(a.k)),"What to do about it",(a,cf,t)=>`For alarm #${D.alarms.indexOf(a)+1} Guardian works out the lowest safe pressure: ${dhText(a.act.ver.plan)}. Checked on a second model, the leak would lose about ${a.act.ver.m3day} instead of ${a.act.ver.m3day0} m³ a day.`);
+  pick.sort((x,y)=>x.n-y.n); MOMENTS.length=0; MOMENTS.push(...pick);
+}
 MOMENTS.forEach(m=>{m.k=m.n-1;m.at=D.days.indexOf(plusDays(D.alarms[m.k].day,m.lag));});
 function showStory(html){$("story").innerHTML=html;$("story").style.display="block";if(innerWidth<=700)$("story").scrollIntoView({block:"nearest",behavior:"smooth"});}
 function hideStory(){$("story").style.display="none";}
-function storyIntro(){placeStory([X1,Y0]);showStory(`<div class="step">Story mode · 4 stops</div><h3>One year in a town with hidden leaks</h3>
-  <p>Guardian sees only ${D.sensors.length} pressure sensors and the zone flow meters, compared each day with its digital twin. We show you the <b>real leaks</b> (purple diamonds) so you can judge it; Guardian never sees them. The year stops at four moments.</p>
+function storyIntro(){placeStory([X1,Y0]);showStory(`<div class="step">Story mode · ${MOMENTS.length} stops</div><h3>One year in a town with hidden leaks</h3>
+  <p>Guardian sees only ${D.sensors.length} pressure sensors and the zone flow meters, compared each day with its digital twin. We show you the <b>real leaks</b> (purple diamonds) so you can judge it; Guardian never sees them. The year stops at ${MOMENTS.length} moments.</p>
   <div class="row"><button class="primary" id="sGo">Start</button><button id="sEnd">Leave story</button></div>`);
   $("sGo").onclick=()=>{hideStory();go();};$("sEnd").onclick=endStory;}
 function placeStory(xy){const st=$("story").style,cv=$("map"),{p}=proj(cv.clientWidth,parseFloat(cv.style.height)),[x,y]=p(...xy);   // corner away from the alarm
@@ -280,7 +289,7 @@ $("play").onclick=()=>{if(day>=N-1){day=0;}hideStory();if(story!=null&&!playing)
 $("storyBtn").onclick=startStory;
 // ---------- how to read this ----------
 function help(){playing=false;$("play").textContent="Play";const sw=(st,inner)=>`<div class="sym"><svg width="22" height="22" viewBox="0 0 22 22" style="${st}">${inner}</svg></div>`;
-  $("dcard").innerHTML=`<h2 style="margin:0 0 4px;font-size:20px">How to read this</h2><div class="sub">One year (2019) of a simulated town, L-Town, replayed one day at a time. Guardian sees only the sensors; it never sees the real leaks.</div>
+  $("dcard").innerHTML=`<h2 style="margin:0 0 4px;font-size:20px">How to read this</h2><div class="sub">One year of ${D.name}, replayed one day at a time. Guardian sees only the sensors; it never sees the real leaks.</div>
   <div class="grp">The map</div><div class="howgrid">
   ${sw("",`<line x1="2" y1="11" x2="20" y2="11" stroke="${css("--pipe")}" stroke-width="2"/>`)}<div><b>Grey lines</b>: the water pipes (about ${D.pipes.length}). Scale bar bottom right.</div>
   ${sw("",`<circle cx="11" cy="11" r="5" fill="${css("--muted")}" opacity=".6"/>`)}<div><b>Small dots</b>: the ${D.sensors.length} pressure sensors. Grey means normal.</div>
@@ -316,5 +325,5 @@ chartHover("cFlow",i=>D.zones.map((z,k)=>`${(ZNAME[z]||z).split(" (")[0]}: ${flo
 $("map").onmouseleave=()=>tipAt(null,null);
 $("day").oninput=e=>{if(story!=null)endStory();day=+e.target.value;draw();};$("truth").onchange=()=>{$("log")._h=null;draw();};
 window.addEventListener("resize",draw);matchMedia("(prefers-color-scheme: dark)").addEventListener("change",draw);
-$("sub").textContent=D.name+" · frozen Guardian v5 · digital twin + night water balance";draw();
+$("sub").textContent=D.name+" · frozen Guardian v5 · digital twin + night water balance";if(D.credit)$("credit").textContent=D.credit;draw();
 </script></body></html>
