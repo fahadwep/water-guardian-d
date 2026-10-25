@@ -326,4 +326,5 @@ $("map").onmouseleave=()=>tipAt(null,null);
 $("day").oninput=e=>{if(story!=null)endStory();day=+e.target.value;draw();};$("truth").onchange=()=>{$("log")._h=null;draw();};
 window.addEventListener("resize",draw);matchMedia("(prefers-color-scheme: dark)").addEventListener("change",draw);
 $("sub").textContent=D.name+" · frozen Guardian v5 · digital twin + night water balance";if(D.credit)$("credit").textContent=D.credit;draw();
+if(location.hash==="#story")setTimeout(()=>{$("detail").style.display="none";startStory();},450);   // link straight into the guided story
 </script></body></html>
