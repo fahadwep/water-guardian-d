@@ -180,28 +180,43 @@ function drawPanel(){const d=D.days[day],showT=$("truth").checked,seen=D.alarms.
   if(html&&html!==$("log")._h){$("log").innerHTML=html;$("log")._h=html;}}
 function draw(){drawMap();drawCharts();drawPanel();drawStrip();toast();$("day").value=day;}
 // ---------- process strip, pop-ups, year summary ----------
-const STAGES=[["Detect","alarm raised"],["Diagnose","leak or sensor?"],["Confirm","night pressure test"],["Locate","300 m search area"],["Prioritise","loss per day"],["Compare","options (planned)"],["Optimise","safe pressure (planned)"],["Verify","2nd model (planned)"]];
-$("strip").insertAdjacentHTML("beforeend",STAGES.map((x,i)=>`<div class="chip${i>4?" plan":""}" id="ch${i}"><b>${i+1}. ${x[0]}</b>${x[1]}</div>`).join(""));
+const STAGES=[["Detect","alarm raised"],["Diagnose","leak or sensor?"],["Confirm","night pressure test"],["Locate","300 m search area"],["Prioritise","loss per day"],["Compare","isolate, lower, monitor"],["Optimise","lowest safe pressure"],["Verify","2nd model, advice"]];
+$("strip").insertAdjacentHTML("beforeend",STAGES.map((x,i)=>`<div class="chip" id="ch${i}"><b>${i+1}. ${x[0]}</b>${x[1]}</div>`).join(""));
 function drawStrip(){const d=D.days[day],seen=D.alarms.filter(a=>a.day<=d);const a=focus!=null&&D.alarms[focus].day<=d?D.alarms[focus]:seen[seen.length-1];
-  for(let i=0;i<8;i++)$("ch"+i).className="chip"+(i>4?" plan":"");
+  for(let i=0;i<8;i++)$("ch"+i).className="chip";
   if(!a){$("slab").textContent="Guardian's process: each alarm moves through these stages";return;}
   const k=D.alarms.indexOf(a),age=(Date.parse(d)-Date.parse(a.day))/864e5,cf=a.confirm||{};
   if(age>12){$("slab").textContent=`Watching… last alarm #${k+1} on ${a.day}`;return;}
   $("ch0").classList.add("on"); if(age>=1)$("ch1").classList.add(a.diag&&a.diag.single?"bad":"on");
   if(age>=4){$("ch2").classList.add(cf.untestable||cf.q==null?"on":(cf.ok?"ok":"bad"));$("ch3").classList.add("on");$("ch4").classList.add("on");}
   else if(age>=1)$("ch2").classList.add("on");
-  $("slab").innerHTML=`<b>Alarm #${k+1}</b> · ${a.node}<br>`+(age<1?"detected today":age<4?"running the night pressure test…":(cf.untestable?"no PRV here: test skipped":(cf.ok?"confirmed by the night test":"not confirmed: recheck before digging")));}
+  const ac=a.act;if(age>=5&&ac){$("ch5").classList.add("on");if(ac.ver){$("ch6").classList.add("on");$("ch7").classList.add(ac.ver.ok?"ok":"bad");}else $("ch7").classList.add("on");}
+  $("slab").innerHTML=`<b>Alarm #${k+1}</b> · ${a.node}<br>`+(age<1?"detected today":age<4?"running the night pressure test…":age<5||!ac?(cf.untestable?"no PRV here: test skipped":(cf.ok?"confirmed by the night test":"not confirmed: recheck before digging")):"Advice: "+REC[ac.rec].toLowerCase());}
+const REC={recheck:"Recheck: do not dig yet",isolate:"Isolate the area and repair now",pressure:"Lower pressure now, repair soon",repair:"Schedule the repair, monitor until then"};
+const pct=(a,b)=>b>0?Math.round(100*(1-a/b)):0;
+function dhText(dh){return ["PRV-1","PRV-2","PRV-3"].map((v,k)=>{const x=dh.map(r=>r[k]),lo=Math.min(...x),hi=Math.max(...x);return hi===0?`${v} unchanged`:lo===hi?`${v} −${hi} m`:`${v} ${lo?"−"+lo:"0"} to −${hi} m`;}).join(", ");}
 let lastSeen=-1;function toast(){const d=D.days[day],n=D.alarms.filter(a=>a.day<=d).length;
   if(playing&&story==null&&n>lastSeen&&lastSeen>=0){   // story mode explains alarms in its captions insteadconst a=D.alarms[n-1];$("toast").innerHTML=`<b>Alarm #${n}</b> · ${a.day}<br>${LABEL[a.kind]||a.kind} near ${a.node}, about ${a.size} m³/h. Running the night pressure test…`;
     $("toast").classList.add("show");clearTimeout(window._tt);window._tt=setTimeout(()=>$("toast").classList.remove("show"),2600);}lastSeen=n;}
+function recLine(A){const c=r=>A.filter(a=>a.act&&a.act.rec===r).length,pv=A.filter(a=>a.act&&a.act.ver&&a.act.ver.ok);if(!pv.length)return "";
+  return `<p class="sub">Guardian's advice over the year: ${c("isolate")} isolate and repair now, ${c("pressure")} lower pressure until the repair, ${c("repair")} schedule the repair, ${c("recheck")} recheck before digging. Pressure plans passed the second-model check for ${pv.length} alarms, cutting their leaks by ${pct(pv.reduce((s,a)=>s+a.act.ver.m3day,0),pv.reduce((s,a)=>s+a.act.ver.m3day0,0))}% on average while every junction kept at least 16 m on both models (15 m plus a 1 m safety margin).</p>`;}
 function summary(){const A=D.alarms,near=A.filter(a=>a.hit),wrong=A.filter(a=>!a.hit),conf=x=>x.filter(a=>(a.confirm||{}).ok).length;
   const loss=A.reduce((s,a)=>s+a.prio.m3day,0);
   $("dcard").innerHTML=`<h2 style="margin:0 0 6px">One year of Guardian v5: L-Town 2019</h2><div class="sub">Frozen v5, one run, never tuned on this year. The real leak list was hidden from Guardian.</div>
   <div class="sumgrid"><div><div class="big">${A.length}</div>alarms raised</div><div><div class="big">${near.length}</div>within 300 m of a real leak</div>
-  <div><div class="big">${conf(near)} / ${near.length}</div>of those confirmed by the night pressure test</div><div><div class="big">${wrong.filter(a=>(a.confirm||{}).z!=null&&!a.confirm.ok).length} / ${wrong.length}</div>wrong-place alarms caught by the test before digging</div></div>
-  <p class="sub">Click any alarm in the log to walk through its 8 stages, or press <b>Story mode</b> for a guided tour of four key moments. Stages 6–8 (compare options, safe pressure, second-model check) are planned.</p>
+  <div><div class="big">${conf(near)} / ${near.length}</div>of those confirmed by the night pressure test</div><div><div class="big">${wrong.filter(a=>(a.confirm||{}).z!=null&&!a.confirm.ok).length} / ${wrong.length}</div>wrong-place alarms caught by the test before digging</div></div>${recLine(A)}
+  <p class="sub">Click any alarm in the log to walk through its 8 stages, or press <b>Story mode</b> for a guided tour of four key moments. Stages 6–8 compare the options, find the lowest safe pressure on the twin and check it on a second model.</p>
   <button class="primary" id="again">Watch again</button> <button id="dclose">Close</button>`;
   $("detail").style.display="flex";$("dclose").onclick=()=>$("detail").style.display="none";$("again").onclick=()=>{$("detail").style.display="none";day=0;lastSeen=-1;$("play").click();};}
+// ---------- stages 6-8 (engine/act.py, development tool; numbers from site/export_actions.py) ----------
+function actStages(a,showT){const ac=a.act,g=css("--hit"),o=css("--miss"),b=css("--accent"),m=css("--muted");
+  if(!ac)return st(6,m,"Compare options","Not computed for this alarm.");
+  const v=ac.ver,i=ac.iso,lp=v?`about ${v.m3day} m³/day (−${pct(v.m3day,v.m3day0)}%), nobody below 15 m`:"not possible here: no pressure-reducing valve reaches this spot (tank-fed zone C)";
+  let h=st(6,b,"Compare options",`<b style="display:inline">Monitor:</b> about ${ac.monitor} m³ lost per day (SAR ${a.prio.sarday}). <b style="display:inline">Lower pressure:</b> ${lp}. <b style="display:inline">Isolate the 300 m area:</b> stops the leak if it is inside (about 8 in 10 alarms), but closes about ${i.valves} pipes and cuts off ${i.junctions} junctions, about ${i.m3day} m³/day of customers' water${i.outside?` (${i.outside} of them outside the area, fed through it)`:""}.`);
+  h+=st(7,v?b:m,"Optimise: lowest safe pressure",v?`On the twin, every 3 hours, each valve is lowered in 1 m steps while every junction keeps at least 16 m (the 15 m service level plus a 1 m safety margin): ${dhText(ac.twin.dh)}. The lowest junction stays at ${ac.twin.pmin} m. Leak flow falls from about ${ac.twin.m3day0} to ${ac.twin.m3day} m³/day (leak flow taken as proportional to pressure).`:"No valve setting changes the pressure at this spot, so there is nothing to optimise.");
+  h+=st(8,v?(v.ok?g:o):b,"Verify on a second model, then advise",(v?`Second model: a 24-hour pressure-driven simulation with the model's own demand patterns and a moving tank level (the twin uses measured snapshots). `+(v.tries>1?`The twin's plan fell below 16 m (15 m + 1 m safety margin) somewhere (short by ${Math.abs(v.first_margin)} m), so every valve was backed off 2 m${v.tries>2?` (${v.tries-1} times)`:""}; then it passed: `:"The plan kept every junction above 16 m first time: ")+`lowest junction ${v.pmin} m, customers get ${(100*Math.min(1,v.served)).toFixed(1)}% of their water, leak about ${v.m3day} m³/day instead of ${v.m3day0}. Final settings: ${dhText(v.dh)}.`:"Nothing to verify. ")+
+    ` <b style="display:inline">Advice to the operator: ${REC[ac.rec]}${(a.confirm||{}).untestable&&ac.rec!=="recheck"?" (not proven by a night test here: survey with acoustic tools first)":""}.</b>`+(showT&&ac.real?` <span style="color:${css("--truth")}">Answer key (real network, hidden from Guardian): the plan ${ac.real.ok?"keeps every junction above the limit":`misses the limit by ${Math.abs(ac.real.margin)} m somewhere`}; all real leaks together would lose ${ac.real.m3day} instead of ${ac.real.m3day0} m³/day (−${pct(ac.real.m3day,ac.real.m3day0)}%).</span>`:""));
+  return h;}
 // ---------- the 8 stages for one alarm ----------
 function st(n,col,title,text){return `<div class="stage"><div class="n" style="background:${col}">${n}</div><div><b>${title}</b><span>${text}</span></div></div>`;}
 function openAlarm(k){const a=D.alarms[k],g=css("--hit"),o=css("--miss"),b=css("--accent"),m=css("--muted"),showT=$("truth").checked;playing=false;$("play").textContent="Play";
@@ -212,8 +227,8 @@ function openAlarm(k){const a=D.alarms[k],g=css("--hit"),o=css("--miss"),b=css("
   h+=`<div class="grp">Prove</div>`+st(3,cf.untestable?m:(cf.ok?g:o),"Confirm the cause (night pressure test)",cf.untestable?"No PRV in this zone (tank-fed zone C): the test cannot run here.":(cf.q==null?"Test nights not available.":(cf.ok?`Confirmed. Pressure lowered 15 m for 15-minute pulses on ${cf.nights[0]} to ${cf.nights[2]}: the network answered like a pressure-sensitive leak (about ${cf.q} m³/h, ${cf.z} standard deviations above noise).`:`Not confirmed. The pulse test on ${cf.nights[0]} to ${cf.nights[2]} showed no leak-like response here (${cf.z} standard deviations). Recheck before digging.`)));
   h+=st(4,b,"Locate",`Most likely junction ${a.node}; search area: every pipe within 300 m.`+(a.cloud?` The evidence points to ${a.cloud.length} junction${a.cloud.length>1?"s":""} holding 80% of the evidence (${a.cloud.length<=15?"tight: confident":a.cloud.length<=60?"medium":"wide: uncertain, survey more widely"}).`:"")+(showT?(a.hit?` <b style="display:inline;color:${g}">Real leak ${a.near} was ${a.dist} m away.</b>`:` <b style="display:inline;color:${o}">No real leak within 300 m.</b>`):""));
   h+=st(5,b,"Prioritise",`About ${a.prio.m3day} m³ lost per day, about SAR ${a.prio.sarday} per day at SAR 1.7/m³ (desalinated water).`);
-  h+=`<div class="grp">Act</div>`+st(6,m,"Compare options","Isolate, lower pressure, or monitor. <i>Planned: not in frozen v5 yet.</i>")+st(7,m,"Optimise","The lowest safe pressure that keeps every customer above 15 m. <i>Planned.</i>")+st(8,m,"Verify and recommend","Check the plan on a second, independent model, then recommend to the operator. <i>Planned.</i>");
-  h+=`<p class="sub" style="margin-top:12px">Advisory only: the operator approves every action. Stages 2, 3 and 5 are computed for this replay from the same data; the alarms themselves are frozen Guardian v5.</p><button id="dclose" style="margin-top:6px">Close</button>`;
+  h+=`<div class="grp">Act</div>`+actStages(a,showT);
+  h+=`<p class="sub" style="margin-top:12px">Advisory only: the operator approves every action. Stages 2, 3 and 5–8 are computed for this replay from the same data (development tools, not scored); the alarms themselves are frozen Guardian v5.</p><button id="dclose" style="margin-top:6px">Close</button>`;
   $("dcard").innerHTML=h;$("detail").style.display="flex";$("dclose").onclick=()=>$("detail").style.display="none";}
 $("detail").onclick=e=>{if(e.target.id==="detail")$("detail").style.display="none";};
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){$("detail").style.display="none";return;}
@@ -246,7 +261,7 @@ function storyIntro(){placeStory([X1,Y0]);showStory(`<div class="step">Story mod
 function placeStory(xy){const st=$("story").style,cv=$("map"),{p}=proj(cv.clientWidth,parseFloat(cv.style.height)),[x,y]=p(...xy);   // corner away from the alarm
   const right=x<cv.clientWidth/2,top=y>parseFloat(cv.style.height)/2;st.left=right?"auto":"12px";st.right=right?"12px":"auto";st.top=top?"12px":"auto";st.bottom=top?"auto":"12px";}
 function storyStop(i){const m=MOMENTS[i],a=D.alarms[m.k];focus=m.k;draw();placeStory(a.xy);
-  showStory(`<div class="step">Stop ${i+1} of ${MOMENTS.length} · ${fmtD(D.days[day])}</div><h3>${m.title}</h3><p>${m.text(a,a.confirm||{},TRUTH[a.near]||{})}</p>
+  showStory(`<div class="step">Stop ${i+1} of ${MOMENTS.length} · ${fmtD(D.days[day])}</div><h3>${m.title}</h3><p>${m.text(a,a.confirm||{},TRUTH[a.near]||{})}${a.act?` <b>Guardian's advice: ${REC[a.act.rec].toLowerCase()}.</b>`:""}</p>
   <div class="row"><button class="primary" id="sGo">${i+1<MOMENTS.length?"Continue":"Play to the end"}</button><button id="sOpen">See its 8 stages</button><button id="sEnd">Leave story</button></div>`);
   $("sGo").onclick=()=>{hideStory();focus=null;story=i+1;go();};$("sOpen").onclick=()=>openAlarm(m.k);$("sEnd").onclick=endStory;}
 function startStory(){story=0;focus=null;day=0;lastSeen=-1;playing=false;$("play").textContent="Play";$("truth").checked=true;$("log")._h=null;$("speed").value="7";draw();storyIntro();}
