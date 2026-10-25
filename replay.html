@@ -72,7 +72,7 @@ canvas{display:block;width:100%}
     <h2>Alarms as they happen <span style="font-weight:400">(click one for its 8 stages)</span></h2><div class="log" id="log"><div class="ev sub">Press Play. Guardian watches every sensor each day and raises an alarm when the pattern matches a leak.</div></div>
   </aside>
   <div class="charts">
-    <section class="panel"><h2>Twin residual at every sensor (cm): measured minus twin, midday</h2><canvas id="cRes" height="220"></canvas></section>
+    <section class="panel"><h2>Pressure change from normal at the sensors (cm)</h2><canvas id="cRes" height="220"></canvas></section>
     <section class="panel"><h2>Night water balance per zone (m³/h above normal)</h2><canvas id="cFlow" height="220"></canvas></section>
   </div>
 </main>
@@ -121,9 +121,25 @@ function chart(id,series,colors,unit,marks){const cv=$(id);const [c,w,h]=fit(cv)
   series.forEach((s,k)=>{c.strokeStyle=colors[k];c.lineWidth=colors.length>4?1:2;c.globalAlpha=colors.length>4?.55:1;c.beginPath();let up=false;
     for(let i=0;i<=day;i++){const v=s[i];if(v==null||!isFinite(v)){up=false;continue;}const p=[X(i),Y(v)];up?c.lineTo(...p):c.moveTo(...p);up=true;}c.stroke();});c.globalAlpha=1;
   c.strokeStyle=css("--ink");c.lineWidth=1;c.beginPath();c.moveTo(X(day),T);c.lineTo(X(day),h-B);c.stroke();}
-const resSeries=D.sensors.map((_,j)=>D.res.map(r=>r[j]));
+const q=(a,f)=>{const b=a.filter(v=>v!=null).sort((x,y)=>x-y);return b.length?b[Math.min(b.length-1,Math.floor(f*(b.length-1)))]:null;};
+const BAND={lo:D.res.map(r=>q(r,0)),q1:D.res.map(r=>q(r,.25)),med:D.res.map(r=>q(r,.5)),q3:D.res.map(r=>q(r,.75)),hi:D.res.map(r=>q(r,1))};
+const worst=D.res.map(r=>r.reduce((m,v,j)=>Math.abs(v)>Math.abs(r[m])?j:m,0));
 const flowSeries=D.zones.map((z,k)=>D.flow.map(r=>r[k]==null?null:r[k]-D.norm[z]));
-function drawCharts(){chart("cRes",resSeries,resSeries.map((_,j)=>j%2?css("--rise"):css("--muted")),"cm",D.alarms);
+function bandChart(id){const cv=$(id);const [c,w,h]=fit(cv);c.clearRect(0,0,w,h);
+  const L=36,B=20,T=40,Rr=8;let lo=Math.min(0,...BAND.lo.filter(v=>v!=null)),hi=Math.max(2,...BAND.hi.filter(v=>v!=null));
+  const X=i=>L+(w-L-Rr)*i/(N-1),Y=v=>T+(h-T-B)*(hi-v)/(hi-lo);
+  c.strokeStyle=css("--line");c.fillStyle=css("--muted");c.font="11px 'IBM Plex Sans',system-ui";c.lineWidth=1;
+  for(const v of [lo,0,hi]){const y=Y(v);c.beginPath();c.moveTo(L,y);c.lineTo(w-Rr,y);c.stroke();c.textAlign="right";c.textBaseline="middle";c.fillText(v.toFixed(0),L-4,y);}
+  c.textAlign="center";c.textBaseline="top";["Jan","Apr","Jul","Oct"].forEach((m,i)=>c.fillText(m,X(Math.round(i*N/4)),h-B+4));
+  for(const a of D.alarms){const i=D.days.indexOf(a.day);if(i<0||i>day)continue;c.strokeStyle=css("--alarm");c.globalAlpha=.25;c.beginPath();c.moveTo(X(i),T);c.lineTo(X(i),h-B);c.stroke();}c.globalAlpha=1;
+  const area=(A,Bv,alpha)=>{c.fillStyle=css("--accent");c.globalAlpha=alpha;c.beginPath();for(let i=0;i<=day;i++)c.lineTo(X(i),Y(A[i]));for(let i=day;i>=0;i--)c.lineTo(X(i),Y(Bv[i]));c.closePath();c.fill();c.globalAlpha=1;};
+  area(BAND.lo,BAND.hi,.10);area(BAND.q1,BAND.q3,.28);
+  const line=(f,col,lw)=>{c.strokeStyle=col;c.lineWidth=lw;c.beginPath();for(let i=0;i<=day;i++){const p=[X(i),Y(f(i))];i?c.lineTo(...p):c.moveTo(...p);}c.stroke();};
+  line(i=>D.res[i][worst[day]],css("--alarm"),1.2);line(i=>BAND.med[i],css("--accent"),2.4);
+  c.strokeStyle=css("--ink");c.lineWidth=1;c.beginPath();c.moveTo(X(day),T);c.lineTo(X(day),h-B);c.stroke();
+  c.font="12px 'IBM Plex Sans',system-ui";c.textAlign="left";c.textBaseline="top";c.fillStyle=css("--accent");c.fillText("— typical sensor (shaded: spread of all 33)",L,4);
+  c.fillStyle=css("--alarm");c.fillText("— most-changed sensor today: "+D.sensors[worst[day]],L,20);}
+function drawCharts(){bandChart("cRes");
   chart("cFlow",flowSeries,flowSeries.map((_,k)=>[css("--accent"),css("--miss"),css("--hit")][k%3]),"m3/h",D.alarms.filter(a=>a.kind==="flow"));}
 // ---------- panel ----------
 function drawPanel(){const d=D.days[day],showT=$("truth").checked,seen=D.alarms.filter(a=>a.day<=d);
