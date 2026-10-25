@@ -42,6 +42,10 @@ canvas{display:block;width:100%}
 #detail .card{background:var(--panel);color:var(--ink);border-radius:12px;max-width:640px;width:100%;max-height:90vh;overflow:auto;padding:20px 22px;border:1px solid var(--line)}
 .stage{display:grid;grid-template-columns:34px 1fr;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)} .stage .n{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:13px;color:#fff}
 .stage b{display:block;font-size:14px} .stage span{font-size:13px;color:var(--ink2)} .grp{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--accent);margin-top:12px;font-weight:700}
+.mapwrap{position:relative}
+#story{position:absolute;left:12px;right:12px;bottom:12px;max-width:540px;background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:12px;padding:14px 16px;box-shadow:0 8px 28px rgba(0,0,0,.28);display:none;z-index:5}
+#story .step{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--accent);font-weight:700} #story h3{margin:4px 0 6px;font-size:18px;font-family:"Readex Pro","IBM Plex Sans",system-ui,sans-serif}
+#story p{margin:0 0 10px;font-size:14px;line-height:1.45;color:var(--ink2)} #story p b{color:var(--ink)} #story .row{display:flex;gap:8px;flex-wrap:wrap}
 @media (max-width:900px){main{grid-template-columns:1fr}.charts{grid-template-columns:1fr}}
 </style></head><body>
 <header>
@@ -49,6 +53,7 @@ canvas{display:block;width:100%}
   <div class="date" id="date">-</div>
   <div class="controls">
     <button class="primary" id="play">Play</button>
+    <button id="storyBtn" title="Plays the year and stops at four key moments with an explanation">Story mode</button>
     <select id="speed" aria-label="Speed"><option value="1">1 day/s</option><option value="3">3 days/s</option><option value="7" selected>7 days/s</option><option value="15">15 days/s</option></select>
     <label class="sw"><input type="checkbox" id="truth"> Show the real leaks</label>
   </div>
@@ -57,7 +62,7 @@ canvas{display:block;width:100%}
 <div class="strip" id="strip"><div class="lab" id="slab">Guardian's process: each alarm moves through these stages</div></div>
 <div id="toast"></div>
 <main>
-  <section class="panel"><h2>Network map</h2><canvas id="map" height="620"></canvas>
+  <section class="panel"><h2>Network map</h2><div class="mapwrap"><canvas id="map" height="620"></canvas><div id="story" role="status" aria-live="polite"></div></div>
     <div class="legend"><span><span class="dot" style="background:var(--muted)"></span>sensor normal</span><span><span class="dot" style="background:var(--drop)"></span>pressure dropped this week</span>
       <span><span class="dot" style="background:var(--rise)"></span>rose this week</span>
       <span><span class="dot" style="background:var(--alarm);opacity:.6"></span>evidence cloud: where the data says the leak probably is (80% of the evidence; tight = confident)</span>
@@ -85,7 +90,7 @@ const D=window.REPLAY, N=D.days.length, $=id=>document.getElementById(id);
 const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 const TXY=Object.fromEntries((window.REPLAY.truth||[]).map(t=>[t.pipe,t.xy]));
 const LABEL={new:"New leak (pressure pattern)",growth:"Known leak grew",relocate:"Location corrected",flow:"Night water balance"};
-let day=0, playing=false, last=0, acc=0;
+let day=0, playing=false, last=0, acc=0, focus=null, story=null;   // story: index of the next story moment, null when off
 $("day").max=N-1;
 // ---------- map geometry ----------
 const xs=D.pipes.flatMap(p=>[p[0],p[2]]), ys=D.pipes.flatMap(p=>[p[1],p[3]]);
@@ -118,7 +123,7 @@ function drawMap(){const cv=$("map");const [c,w,h]=fit(cv);const {s,p}=proj(w,h)
     if(age<5){c.strokeStyle=css("--alarm");c.lineWidth=2;c.globalAlpha=1-age/5;c.beginPath();c.arc(x,y,6+age*6,0,7);c.stroke();c.globalAlpha=1;}
     c.fillStyle=showT?(a.hit?css("--hit"):css("--miss")):css("--alarm");c.beginPath();c.arc(x,y,7,0,7);c.fill();
     c.fillStyle="#fff";c.font="bold 9px system-ui";c.textAlign="center";c.textBaseline="middle";c.fillText(k+1,x,y+.5);});
-  const lastA=D.alarms.filter(a=>a.day<=d).pop();if(lastA){const [x,y]=p(...lastA.xy);c.strokeStyle=css("--ink");c.lineWidth=2;c.beginPath();c.arc(x,y,11,0,7);c.stroke();}
+  const lastA=focus!=null?D.alarms[focus]:D.alarms.filter(a=>a.day<=d).pop();if(lastA&&lastA.day<=d){const [x,y]=p(...lastA.xy);c.strokeStyle=css("--ink");c.lineWidth=2;c.beginPath();c.arc(x,y,11,0,7);c.stroke();}
   const sb=500*s,bx=w-sb-18,by=h-16;c.strokeStyle=css("--ink2");c.fillStyle=css("--ink2");c.lineWidth=2;c.beginPath();c.moveTo(bx,by);c.lineTo(bx+sb,by);c.moveTo(bx,by-5);c.lineTo(bx,by+1);c.moveTo(bx+sb,by-5);c.lineTo(bx+sb,by+1);c.stroke();
   c.font="12px 'IBM Plex Sans',system-ui";c.textAlign="center";c.textBaseline="bottom";c.fillText("500 m",bx+sb/2,by-4);}
 // ---------- charts (drawn up to the current day) ----------
@@ -165,7 +170,7 @@ function draw(){drawMap();drawCharts();drawPanel();drawStrip();toast();$("day").
 // ---------- process strip, pop-ups, year summary ----------
 const STAGES=[["Detect","alarm raised"],["Diagnose","leak or sensor?"],["Confirm","night pressure test"],["Locate","300 m search area"],["Prioritise","loss per day"],["Compare","options (planned)"],["Optimise","safe pressure (planned)"],["Verify","2nd model (planned)"]];
 $("strip").insertAdjacentHTML("beforeend",STAGES.map((x,i)=>`<div class="chip${i>4?" plan":""}" id="ch${i}"><b>${i+1}. ${x[0]}</b>${x[1]}</div>`).join(""));
-function drawStrip(){const d=D.days[day],seen=D.alarms.filter(a=>a.day<=d);const a=seen[seen.length-1];
+function drawStrip(){const d=D.days[day],seen=D.alarms.filter(a=>a.day<=d);const a=focus!=null&&D.alarms[focus].day<=d?D.alarms[focus]:seen[seen.length-1];
   for(let i=0;i<8;i++)$("ch"+i).className="chip"+(i>4?" plan":"");
   if(!a){$("slab").textContent="Guardian's process: each alarm moves through these stages";return;}
   const k=D.alarms.indexOf(a),age=(Date.parse(d)-Date.parse(a.day))/864e5,cf=a.confirm||{};
@@ -182,7 +187,7 @@ function summary(){const A=D.alarms,near=A.filter(a=>a.hit),wrong=A.filter(a=>!a
   $("dcard").innerHTML=`<h2 style="margin:0 0 6px">One year of Guardian v5: L-Town 2019</h2><div class="sub">Frozen v5, one run, never tuned on this year. The real leak list was hidden from Guardian.</div>
   <div class="sumgrid"><div><div class="big">${A.length}</div>alarms raised</div><div><div class="big">${near.length}</div>within 300 m of a real leak</div>
   <div><div class="big">${conf(near)} / ${near.length}</div>of those confirmed by the night pressure test</div><div><div class="big">${wrong.filter(a=>(a.confirm||{}).z!=null&&!a.confirm.ok).length} / ${wrong.length}</div>wrong-place alarms caught by the test before digging</div></div>
-  <p class="sub">Click any alarm in the log to walk through its 8 stages. Stages 6–8 (compare options, safe pressure, second-model check) are planned.</p>
+  <p class="sub">Click any alarm in the log to walk through its 8 stages, or press <b>Story mode</b> for a guided tour of four key moments. Stages 6–8 (compare options, safe pressure, second-model check) are planned.</p>
   <button class="primary" id="again">Watch again</button> <button id="dclose">Close</button>`;
   $("detail").style.display="flex";$("dclose").onclick=()=>$("detail").style.display="none";$("again").onclick=()=>{$("detail").style.display="none";day=0;lastSeen=-1;$("play").click();};}
 // ---------- the 8 stages for one alarm ----------
@@ -203,11 +208,40 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")$("detail").style.di
 $("log").onclick=e=>{const ev=e.target.closest(".ev[data-k]");if(ev)openAlarm(+ev.dataset.k);};
 $("map").onclick=e=>{const r=$("map").getBoundingClientRect(),{p}=proj($("map").clientWidth,parseFloat($("map").style.height));const d=D.days[day];let best=null;
   D.alarms.forEach((a,k)=>{if(a.day>d)return;const [x,y]=p(...a.xy),dd=Math.hypot(x-(e.clientX-r.left),y-(e.clientY-r.top));if(dd<14&&(!best||dd<best[0]))best=[dd,k];});if(best)openAlarm(best[1]);};
+// ---------- story mode: plays the year and stops at key moments (numbers read from the data) ----------
+const fmtD=s=>new Date(s).toLocaleDateString("en-GB",{day:"numeric",month:"short"}), sar=n=>n.toLocaleString("en-GB");
+const TRUTH=Object.fromEntries(D.truth.map(t=>[t.pipe,t]));
+const plusDays=(s,n)=>new Date(Date.parse(s)+n*864e5).toISOString().slice(0,10);
+const YEAR={near:D.alarms.filter(a=>a.hit).length,nearOk:D.alarms.filter(a=>a.hit&&(a.confirm||{}).ok).length,
+  wrong:D.alarms.filter(a=>!a.hit).length,wrongOk:D.alarms.filter(a=>!a.hit&&(a.confirm||{}).ok).length};
+const MOMENTS=[   // alarm number (1-based) and how many days after it to stop, so the night test result is in
+  {n:2,lag:4,title:"A burst, found in two days",text:(a,cf,t)=>`On <b>${fmtD(t.start)}</b> pipe ${a.near} starts leaking, soon about ${Math.round(t.max)} m³/h. On <b>${fmtD(a.day)}</b> ${a.diag.moved} sensors drop together and Guardian raises alarm #2. The night pressure test (${fmtD(cf.nights[0])}–${fmtD(cf.nights[2])}) answers like a real leak. Guardian's spot is <b>${a.dist} m</b> from the real leak. Left running it would lose about ${sar(a.prio.m3day)} m³ a day (SAR ${sar(a.prio.sarday)}).`},
+  {n:12,lag:4,title:"A large summer leak, pinpointed",text:(a,cf,t)=>`Pipe ${a.near} starts leaking on <b>${fmtD(t.start)}</b>, growing to about ${Math.round(t.max)} m³/h. Guardian raises alarm #12 on <b>${fmtD(a.day)}</b> and the night test confirms it (${cf.z} standard deviations above noise). The real leak is <b>${a.dist} m</b> away: inside the 300 m search area. Priority: about SAR ${sar(a.prio.sarday)} of desalinated water a day.`},
+  {n:23,lag:4,title:"A wrong alarm, caught before digging",text:(a,cf,t)=>`Not every alarm is right. Alarm #23 points at junction ${a.node}, but no real leak is within 300 m (the nearest, ${a.near}, started that day ${a.dist} m away). The night pressure test finds <b>no leak-like response</b> (${cf.z} standard deviations), so Guardian advises: recheck, do not send a crew yet. This is why Guardian proves the cause before digging.`},
+  {n:25,lag:4,title:"Ten days later: found",text:(a,cf,t)=>`As ${a.near} keeps leaking, the pattern becomes clear. Alarm #25 on <b>${fmtD(a.day)}</b> puts it <b>${a.dist} m</b> from the real leak, and this time the night test confirms it. Over the whole year the test confirmed ${YEAR.nearOk} of the ${YEAR.near} alarms near real leaks and only ${YEAR.wrongOk} of the ${YEAR.wrong} wrong-place alarms.`}];
+MOMENTS.forEach(m=>{m.k=m.n-1;m.at=D.days.indexOf(plusDays(D.alarms[m.k].day,m.lag));});
+function showStory(html){$("story").innerHTML=html;$("story").style.display="block";}
+function hideStory(){$("story").style.display="none";}
+function storyIntro(){showStory(`<div class="step">Story mode · 4 stops</div><h3>One year in a town with hidden leaks</h3>
+  <p>Guardian sees only ${D.sensors.length} pressure sensors and the zone flow meters, compared each day with its digital twin. We show you the <b>real leaks</b> (purple diamonds) so you can judge it; Guardian never sees them. The year stops at four moments.</p>
+  <div class="row"><button class="primary" id="sGo">Start</button><button id="sEnd">Leave story</button></div>`);
+  $("sGo").onclick=()=>{hideStory();go();};$("sEnd").onclick=endStory;}
+function storyStop(i){const m=MOMENTS[i],a=D.alarms[m.k];focus=m.k;draw();
+  showStory(`<div class="step">Stop ${i+1} of ${MOMENTS.length} · ${fmtD(D.days[day])}</div><h3>${m.title}</h3><p>${m.text(a,a.confirm||{},TRUTH[a.near]||{})}</p>
+  <div class="row"><button class="primary" id="sGo">${i+1<MOMENTS.length?"Continue":"Play to the end"}</button><button id="sOpen">See its 8 stages</button><button id="sEnd">Leave story</button></div>`);
+  $("sGo").onclick=()=>{hideStory();focus=null;story=i+1;go();};$("sOpen").onclick=()=>openAlarm(m.k);$("sEnd").onclick=endStory;}
+function startStory(){story=0;focus=null;day=0;lastSeen=-1;playing=false;$("play").textContent="Play";$("truth").checked=true;$("log")._h=null;$("speed").value="7";draw();storyIntro();}
+function endStory(){story=null;focus=null;hideStory();draw();}
 // ---------- playback ----------
+function go(){playing=true;$("play").textContent="Pause";last=performance.now();acc=0;requestAnimationFrame(tick);}
 function tick(t){if(!playing)return;const dt=(t-last)/1000;last=t;acc+=dt*(+$("speed").value);
-  while(acc>=1&&day<N-1){day++;acc-=1;}draw();if(day>=N-1){playing=false;$("play").textContent="Replay";summary();return;}requestAnimationFrame(tick);}
-$("play").onclick=()=>{if(day>=N-1){day=0;}playing=!playing;$("play").textContent=playing?"Pause":"Play";if(playing){last=performance.now();acc=0;requestAnimationFrame(tick);}};
-$("day").oninput=e=>{day=+e.target.value;draw();};$("truth").onchange=()=>{$("log")._h=null;draw();};
+  const stop=story!=null&&story<MOMENTS.length?MOMENTS[story].at:-1;
+  while(acc>=1&&day<N-1){day++;acc-=1;if(day===stop)break;}draw();
+  if(day===stop){playing=false;$("play").textContent="Play";storyStop(story);return;}
+  if(day>=N-1){playing=false;$("play").textContent="Replay";story=null;summary();return;}requestAnimationFrame(tick);}
+$("play").onclick=()=>{if(day>=N-1){day=0;}hideStory();if(story!=null&&!playing)focus=null;playing=!playing;$("play").textContent=playing?"Pause":"Play";if(playing){last=performance.now();acc=0;requestAnimationFrame(tick);}};
+$("storyBtn").onclick=startStory;
+$("day").oninput=e=>{if(story!=null)endStory();day=+e.target.value;draw();};$("truth").onchange=()=>{$("log")._h=null;draw();};
 window.addEventListener("resize",draw);matchMedia("(prefers-color-scheme: dark)").addEventListener("change",draw);
 $("sub").textContent=D.name+" · frozen Guardian v5 · digital twin + night water balance";draw();
 </script></body></html>
