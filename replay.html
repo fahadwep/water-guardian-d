@@ -82,6 +82,7 @@ canvas{display:block;width:100%}
 <script>
 const D=window.REPLAY, N=D.days.length, $=id=>document.getElementById(id);
 const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const TXY=Object.fromEntries((window.REPLAY.truth||[]).map(t=>[t.pipe,t.xy]));
 const LABEL={new:"New leak (pressure pattern)",growth:"Known leak grew",relocate:"Location corrected",flow:"Night water balance"};
 let day=0, playing=false, last=0, acc=0;
 $("day").max=N-1;
@@ -103,7 +104,13 @@ function drawMap(){const cv=$("map");const [c,w,h]=fit(cv);const {s,p}=proj(w,h)
   const res=D.res[day];D.sxy.forEach((q,i)=>{const [x,y]=p(...q);c.fillStyle=resColor(res[i]);c.beginPath();c.arc(x,y,4.5+Math.min(4,Math.abs(res[i])/1.5),0,7);c.fill();
     c.strokeStyle=css("--panel");c.lineWidth=1.5;c.stroke();});
   D.alarms.forEach((a,k)=>{if(a.day>d)return;const [x,y]=p(...a.xy),age=(Date.parse(d)-Date.parse(a.day))/864e5;
-    if(age<30){c.fillStyle=css("--alarm");c.globalAlpha=age<5?.25:.10;c.beginPath();c.arc(x,y,300*s,0,7);c.fill();c.globalAlpha=1;}   // search area for recent alarms only
+    if(age<30){c.fillStyle=css("--alarm");c.globalAlpha=age<5?.22:.08;c.beginPath();c.arc(x,y,300*s,0,7);c.fill();c.globalAlpha=age<5?.9:.45;
+      c.strokeStyle=css("--alarm");c.lineWidth=1.2;c.setLineDash([]);c.stroke();c.globalAlpha=1;   // search area (300 m) for recent alarms
+      if(showT&&a.near&&TXY[a.near]){const [lx,ly]=p(...TXY[a.near]),col=a.hit?css("--hit"):css("--miss");   // how far the real leak was
+        c.strokeStyle=col;c.lineWidth=2;c.setLineDash([5,4]);c.beginPath();c.moveTo(x,y);c.lineTo(lx,ly);c.stroke();c.setLineDash([]);
+        const mx=(x+lx)/2,my=(y+ly)/2,t=a.dist+" m";c.font="bold 12px 'IBM Plex Sans',system-ui";const tw=c.measureText(t).width+8;
+        c.fillStyle=css("--panel");c.fillRect(mx-tw/2,my-9,tw,18);c.strokeStyle=col;c.lineWidth=1;c.strokeRect(mx-tw/2,my-9,tw,18);
+        c.fillStyle=col;c.textAlign="center";c.textBaseline="middle";c.fillText(t,mx,my);}}
     if(age<5){c.strokeStyle=css("--alarm");c.lineWidth=2;c.globalAlpha=1-age/5;c.beginPath();c.arc(x,y,6+age*6,0,7);c.stroke();c.globalAlpha=1;}
     c.fillStyle=showT?(a.hit?css("--hit"):css("--miss")):css("--alarm");c.beginPath();c.arc(x,y,7,0,7);c.fill();
     c.fillStyle="#fff";c.font="bold 9px system-ui";c.textAlign="center";c.textBaseline="middle";c.fillText(k+1,x,y+.5);});
