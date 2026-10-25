@@ -58,8 +58,8 @@ canvas{display:block;width:100%}
 <div id="toast"></div>
 <main>
   <section class="panel"><h2>Network map</h2><canvas id="map" height="620"></canvas>
-    <div class="legend"><span><span class="dot" style="background:var(--drop)"></span>sensor pressure below the twin</span>
-      <span><span class="dot" style="background:var(--rise)"></span>above the twin</span>
+    <div class="legend"><span><span class="dot" style="background:var(--muted)"></span>sensor normal</span><span><span class="dot" style="background:var(--drop)"></span>pressure dropped this week</span>
+      <span><span class="dot" style="background:var(--rise)"></span>rose this week</span>
       <span><span class="dot" style="background:var(--alarm);opacity:.6"></span>evidence cloud: where the data says the leak probably is (80% of the evidence; tight = confident)</span>
       <span><span class="dot" style="border:1.5px solid var(--alarm);background:none"></span>300 m search area around the best spot</span>
       <span id="lgT" hidden><span class="dot" style="background:var(--truth)"></span>real leak (hidden from Guardian)</span></div></section>
@@ -94,7 +94,7 @@ function fit(cv){const r=window.devicePixelRatio||1,w=cv.clientWidth,h=cv.height
   const ctx=cv.getContext("2d");ctx.setTransform(r,0,0,r,0,0);return [ctx,w,h];}
 function proj(w,h){const pad=16,s=Math.min((w-2*pad)/(X1-X0),(h-2*pad)/(Y1-Y0));const ox=(w-s*(X1-X0))/2,oy=(h-s*(Y1-Y0))/2;
   return {s,p:(x,y)=>[ox+(x-X0)*s,h-(oy+(y-Y0)*s)]};}
-function resColor(v){const c=Math.max(-1,Math.min(1,v/4));return c<0?mix(css("--drop"),-c):mix(css("--rise"),c);}
+function resColor(z){if(Math.abs(z)<3.5)return css("--muted");const c=Math.min(1,(Math.abs(z)-3.5)/4+.4);return z<0?mix(css("--drop"),c):mix(css("--rise"),c);}   // grey unless it changed this week
 function mix(hex,a){const n=parseInt(hex.slice(1),16),g=css("--muted"),m=parseInt(g.slice(1),16);
   const f=(s)=>Math.round(((n>>s)&255)*a+((m>>s)&255)*(1-a));return `rgb(${f(16)},${f(8)},${f(0)})`;}
 function drawMap(){const cv=$("map");const [c,w,h]=fit(cv);const {s,p}=proj(w,h);c.clearRect(0,0,w,h);
@@ -102,7 +102,7 @@ function drawMap(){const cv=$("map");const [c,w,h]=fit(cv);const {s,p}=proj(w,h)
   const showT=$("truth").checked, d=D.days[day];
   if(showT){c.fillStyle=css("--truth");for(const t of D.truth){if(t.start<=d&&d<=t.end){const [x,y]=p(...t.xy),r=4+t.max/4;
     c.globalAlpha=.9;c.beginPath();c.moveTo(x,y-r);c.lineTo(x+r,y);c.lineTo(x,y+r);c.lineTo(x-r,y);c.closePath();c.fill();}}c.globalAlpha=1;}
-  const res=D.res[day];D.sxy.forEach((q,i)=>{const [x,y]=p(...q);c.fillStyle=resColor(res[i]);c.beginPath();c.arc(x,y,4.5+Math.min(4,Math.abs(res[i])/1.5),0,7);c.fill();
+  const res=D.chg[day];D.sxy.forEach((q,i)=>{const [x,y]=p(...q),z=res[i],on=Math.abs(z)>=3.5;c.fillStyle=resColor(z);c.globalAlpha=on?1:.55;c.beginPath();c.arc(x,y,on?5+Math.min(4,(Math.abs(z)-3.5)/1.5):4,0,7);c.fill();c.globalAlpha=1;
     c.strokeStyle=css("--panel");c.lineWidth=1.5;c.stroke();});
   D.alarms.forEach((a,k)=>{if(a.day>d)return;const [x,y]=p(...a.xy),age=(Date.parse(d)-Date.parse(a.day))/864e5;
     if(age<30&&a.cloud){const pm=a.cloud[0][2];c.fillStyle=css("--alarm");   // evidence cloud: where Guardian's evidence says the leak probably is
