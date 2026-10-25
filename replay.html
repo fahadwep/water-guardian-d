@@ -46,6 +46,10 @@ canvas{display:block;width:100%}
 #story{position:absolute;left:12px;right:12px;bottom:12px;max-width:540px;background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:12px;padding:14px 16px;box-shadow:0 8px 28px rgba(0,0,0,.28);display:none;z-index:5}
 #story .step{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--accent);font-weight:700} #story h3{margin:4px 0 6px;font-size:18px;font-family:"Readex Pro","IBM Plex Sans",system-ui,sans-serif}
 #story p{margin:0 0 10px;font-size:14px;line-height:1.45;color:var(--ink2)} #story p b{color:var(--ink)} #story .row{display:flex;gap:8px;flex-wrap:wrap}
+#tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12.5px;line-height:1.35;padding:6px 9px;border-radius:7px;max-width:260px;z-index:7;display:none;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+#tip b{font-weight:700}
+.howgrid{display:grid;grid-template-columns:28px 1fr;gap:9px 10px;align-items:start;font-size:14px;color:var(--ink2);margin:10px 0} .howgrid b{color:var(--ink)}
+.sym{width:22px;height:22px;display:grid;place-items:center}
 @media (max-width:900px){main{grid-template-columns:1fr}.charts{grid-template-columns:1fr}}
 </style></head><body>
 <header>
@@ -54,13 +58,14 @@ canvas{display:block;width:100%}
   <div class="controls">
     <button class="primary" id="play">Play</button>
     <button id="storyBtn" title="Plays the year and stops at four key moments with an explanation">Story mode</button>
+    <button id="helpBtn" title="What the map, colours and graphs mean">How to read this</button>
     <select id="speed" aria-label="Speed"><option value="1">1 day/s</option><option value="3">3 days/s</option><option value="7" selected>7 days/s</option><option value="15">15 days/s</option></select>
     <label class="sw"><input type="checkbox" id="truth"> Show the real leaks</label>
   </div>
   <div class="scrub"><input type="range" id="day" min="0" value="0" aria-label="Day of the year"></div>
 </header>
 <div class="strip" id="strip"><div class="lab" id="slab">Guardian's process: each alarm moves through these stages</div></div>
-<div id="toast"></div>
+<div id="toast"></div><div id="tip"></div>
 <main>
   <section class="panel"><h2>Network map</h2><div class="mapwrap"><canvas id="map" height="620"></canvas><div id="story" role="status" aria-live="polite"></div></div>
     <div class="legend"><span><span class="dot" style="background:var(--muted)"></span>sensor normal</span><span><span class="dot" style="background:var(--drop)"></span>pressure dropped this week</span>
@@ -79,7 +84,7 @@ canvas{display:block;width:100%}
   </aside>
   <div class="charts">
     <section class="panel"><h2>Pressure change from normal at the sensors (cm)</h2><canvas id="cRes" height="220"></canvas></section>
-    <section class="panel"><h2>Night water balance per zone (m³/h above normal)</h2><canvas id="cFlow" height="220"></canvas></section>
+    <section class="panel"><h2>Night water balance per zone (m³/h above normal)</h2><canvas id="cFlow" height="220"></canvas><div class="legend" id="lgFlow"></div></section>
   </div>
 </main>
 <p class="note">Precomputed from one frozen Guardian v5 run on the BattLeDIM L-Town 2019 data (Vrachimis et al. 2022, Zenodo 4017659, CC BY 4.0). Guardian never sees the real leak list; the switch only shows it to you. Advisory only: every action needs an operator's approval.</p>
@@ -156,7 +161,10 @@ function bandChart(id){const cv=$(id);const [c,w,h]=fit(cv);c.clearRect(0,0,w,h)
   c.font="12px 'IBM Plex Sans',system-ui";c.textAlign="left";c.textBaseline="top";c.fillStyle=css("--accent");c.fillText("— typical sensor (shaded: spread of all 33)",L,4);
   c.fillStyle=css("--alarm");c.fillText("— most-changed sensor today: "+D.sensors[worst[day]],L,20);}
 function drawCharts(){bandChart("cRes");
-  chart("cFlow",flowSeries,flowSeries.map((_,k)=>[css("--accent"),css("--miss"),css("--hit")][k%3]),"m3/h",D.alarms.filter(a=>a.kind==="flow"));}
+  chart("cFlow",flowSeries,FCOL(),"m3/h",D.alarms.filter(a=>a.kind==="flow"));
+  $("lgFlow").innerHTML=D.zones.map((z,k)=>`<span><span class="dot" style="background:${FCOL()[k]}"></span>${ZNAME[z]||z}</span>`).join("");}
+const FCOL=()=>D.zones.map((_,k)=>[css("--accent"),css("--miss"),css("--hit")][k%3]);
+const ZNAME={zone0:"Zone C (tank-fed)",zone1:"Zones A+B (fed through pressure-reducing valves)"};
 // ---------- panel ----------
 function drawPanel(){const d=D.days[day],showT=$("truth").checked,seen=D.alarms.filter(a=>a.day<=d);
   $("date").textContent=new Date(d).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});$("kDay").textContent=day+1;$("kAl").textContent=seen.length;
@@ -241,6 +249,41 @@ function tick(t){if(!playing)return;const dt=(t-last)/1000;last=t;acc+=dt*(+$("s
   if(day>=N-1){playing=false;$("play").textContent="Replay";story=null;summary();return;}requestAnimationFrame(tick);}
 $("play").onclick=()=>{if(day>=N-1){day=0;}hideStory();if(story!=null&&!playing)focus=null;playing=!playing;$("play").textContent=playing?"Pause":"Play";if(playing){last=performance.now();acc=0;requestAnimationFrame(tick);}};
 $("storyBtn").onclick=startStory;
+// ---------- how to read this ----------
+function help(){playing=false;$("play").textContent="Play";const sw=(st,inner)=>`<div class="sym"><svg width="22" height="22" viewBox="0 0 22 22" style="${st}">${inner}</svg></div>`;
+  $("dcard").innerHTML=`<h2 style="margin:0 0 4px;font-size:20px">How to read this</h2><div class="sub">One year (2019) of a simulated town, L-Town, replayed one day at a time. Guardian sees only the sensors; it never sees the real leaks.</div>
+  <div class="grp">The map</div><div class="howgrid">
+  ${sw("",`<line x1="2" y1="11" x2="20" y2="11" stroke="${css("--pipe")}" stroke-width="2"/>`)}<div><b>Grey lines</b>: the water pipes (about ${D.pipes.length}). Scale bar bottom right.</div>
+  ${sw("",`<circle cx="11" cy="11" r="5" fill="${css("--muted")}" opacity=".6"/>`)}<div><b>Small dots</b>: the ${D.sensors.length} pressure sensors. Grey means normal.</div>
+  ${sw("",`<circle cx="7" cy="11" r="5" fill="${css("--drop")}"/><circle cx="16" cy="11" r="5" fill="${css("--rise")}"/>`)}<div><b>Red / blue sensor</b>: its pressure dropped / rose this week, more than its own normal week-to-week wandering. A leak pulls nearby pressures down.</div>
+  ${sw("",`<circle cx="11" cy="11" r="8" fill="${css("--alarm")}"/><text x="11" y="14.5" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">3</text>`)}<div><b>Numbered dot</b>: an alarm, Guardian's best guess of where a leak is. Hover or click it.</div>
+  ${sw("",`<circle cx="11" cy="11" r="9" fill="none" stroke="${css("--alarm")}" stroke-width="1.5"/>`)}<div><b>Circle</b>: the 300 m search area a crew would survey with acoustic tools.</div>
+  ${sw("",`<circle cx="7" cy="9" r="4" fill="${css("--alarm")}" opacity=".6"/><circle cx="14" cy="13" r="5" fill="${css("--alarm")}" opacity=".35"/>`)}<div><b>Red cloud</b>: where the evidence points (80% of it). Tight = confident, wide = survey more widely.</div>
+  ${sw("",`<path d="M11 3 L19 11 L11 19 L3 11 Z" fill="${css("--truth")}"/>`)}<div><b>Purple diamond</b> (only with “Show the real leaks”): a real leak, hidden from Guardian. Green alarm = within 300 m of one, orange = wrong place; the dashed line gives the distance.</div></div>
+  <div class="grp">The graphs</div><div class="howgrid">
+  ${sw("",`<rect x="2" y="7" width="18" height="8" fill="${css("--accent")}" opacity=".3"/><line x1="2" y1="11" x2="20" y2="11" stroke="${css("--accent")}" stroke-width="2"/>`)}<div><b>Left</b>: measured pressure minus what the digital twin expected, in cm. Near zero = the network behaves as the twin predicts. A leak pushes it below zero.</div>
+  ${sw("",`<polyline points="2,15 9,14 13,8 20,7" fill="none" stroke="${css("--miss")}" stroke-width="2"/>`)}<div><b>Right</b>: night water balance, how much more water each zone uses at night (when almost everyone sleeps) than its normal. A steady rise means a leak.</div>
+  ${sw("",`<line x1="11" y1="2" x2="11" y2="20" stroke="${css("--alarm")}" stroke-width="1.5" opacity=".6"/>`)}<div><b>Thin red lines</b>: the days alarms were raised. Hover a graph for the exact numbers.</div></div>
+  <div class="grp">The strip at the top</div><p class="sub" style="margin:6px 0">Each alarm walks through Guardian's 8 stages: detect, diagnose, confirm with a night pressure test, locate, prioritise; then compare options, find the lowest safe pressure, and verify on a second model.</p>
+  <button class="primary" id="hStory">Start story mode</button> <button id="dclose">Close</button>`;
+  $("detail").style.display="flex";$("dclose").onclick=()=>$("detail").style.display="none";$("hStory").onclick=()=>{$("detail").style.display="none";startStory();};}
+$("helpBtn").onclick=help;
+try{if(!localStorage.getItem("wg_help_seen")){localStorage.setItem("wg_help_seen","1");setTimeout(help,300);}}catch(e){}
+// ---------- hover labels ----------
+function tipAt(e,html){const t=$("tip");if(!html){t.style.display="none";return;}t.innerHTML=html;t.style.display="block";
+  const r=t.getBoundingClientRect();let x=e.clientX+14,y=e.clientY+14;if(x+r.width>innerWidth-8)x=e.clientX-r.width-14;if(y+r.height>innerHeight-8)y=e.clientY-r.height-14;t.style.left=x+"px";t.style.top=y+"px";}
+$("map").onmousemove=e=>{const cv=$("map"),r=cv.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top,{p}=proj(cv.clientWidth,parseFloat(cv.style.height)),d=D.days[day];
+  let best=null;const near=(xy,lim,html)=>{const [x,y]=p(...xy),dd=Math.hypot(x-mx,y-my);if(dd<lim&&(!best||dd<best[0]))best=[dd,html];};
+  D.alarms.forEach((a,k)=>{if(a.day<=d)near(a.xy,12,`<b>Alarm #${k+1}</b> · ${a.day}<br>${LABEL[a.kind]||a.kind} at ${a.node}, about ${a.size} m³/h`+($("truth").checked?(a.hit?`<br>✓ real leak ${a.dist} m away`:`<br>✗ no real leak within 300 m`):"")+`<br><i>click for its 8 stages</i>`);});
+  D.sxy.forEach((q,i)=>{const z=D.chg[day][i];near(q,9,`<b>Sensor ${D.sensors[i]}</b><br>`+(Math.abs(z)<3.5?"normal this week":(z<0?"pressure dropped":"pressure rose")+` this week (${Math.abs(z).toFixed(1)}× its normal wandering)`)+`<br>vs twin today: ${D.res[day][i]==null?"–":D.res[day][i].toFixed(1)+" cm"}`);});
+  if($("truth").checked)D.truth.forEach(t=>{if(t.start<=d&&d<=t.end)near(t.xy,10,`<b>Real leak ${t.pipe}</b> (hidden from Guardian)<br>${t.start} to ${t.end}, up to ${t.max} m³/h`);});
+  cv.style.cursor=best&&best[1].includes("Alarm")?"pointer":"default";tipAt(e,best&&best[1]);};
+function chartHover(id,f){$(id).onmousemove=e=>{const cv=$(id),r=cv.getBoundingClientRect(),i=Math.round((e.clientX-r.left-36)/(cv.clientWidth-44)*(N-1));
+  if(i<0||i>day){tipAt(e,null);return;}const al=D.alarms.map((a,k)=>[a,k]).filter(([a])=>a.day===D.days[i]);
+  tipAt(e,`<b>${new Date(D.days[i]).toLocaleDateString("en-GB",{day:"numeric",month:"short"})}</b><br>`+f(i)+al.map(([a,k])=>`<br>alarm #${k+1} (${LABEL[a.kind]||a.kind})`).join(""));};$(id).onmouseleave=()=>tipAt(null,null);}
+chartHover("cRes",i=>`typical sensor ${BAND.med[i]==null?"–":BAND.med[i].toFixed(1)} cm vs twin<br>middle half: ${BAND.q1[i]?.toFixed(1)} to ${BAND.q3[i]?.toFixed(1)} cm`);
+chartHover("cFlow",i=>D.zones.map((z,k)=>`${(ZNAME[z]||z).split(" (")[0]}: ${flowSeries[k][i]==null?"–":(flowSeries[k][i]>0?"+":"")+flowSeries[k][i].toFixed(1)+" m³/h"}`).join("<br>"));
+$("map").onmouseleave=()=>tipAt(null,null);
 $("day").oninput=e=>{if(story!=null)endStory();day=+e.target.value;draw();};$("truth").onchange=()=>{$("log")._h=null;draw();};
 window.addEventListener("resize",draw);matchMedia("(prefers-color-scheme: dark)").addEventListener("change",draw);
 $("sub").textContent=D.name+" · frozen Guardian v5 · digital twin + night water balance";draw();
