@@ -60,7 +60,8 @@ canvas{display:block;width:100%}
   <section class="panel"><h2>Network map</h2><canvas id="map" height="620"></canvas>
     <div class="legend"><span><span class="dot" style="background:var(--drop)"></span>sensor pressure below the twin</span>
       <span><span class="dot" style="background:var(--rise)"></span>above the twin</span>
-      <span><span class="dot" style="background:var(--alarm);opacity:.35"></span>alarm + 300 m search area</span>
+      <span><span class="dot" style="background:var(--alarm);opacity:.6"></span>evidence cloud: where the data says the leak probably is (80% of the evidence; tight = confident)</span>
+      <span><span class="dot" style="border:1.5px solid var(--alarm);background:none"></span>300 m search area around the best spot</span>
       <span id="lgT" hidden><span class="dot" style="background:var(--truth)"></span>real leak (hidden from Guardian)</span></div></section>
   <aside class="panel">
     <div class="kpis">
@@ -104,7 +105,10 @@ function drawMap(){const cv=$("map");const [c,w,h]=fit(cv);const {s,p}=proj(w,h)
   const res=D.res[day];D.sxy.forEach((q,i)=>{const [x,y]=p(...q);c.fillStyle=resColor(res[i]);c.beginPath();c.arc(x,y,4.5+Math.min(4,Math.abs(res[i])/1.5),0,7);c.fill();
     c.strokeStyle=css("--panel");c.lineWidth=1.5;c.stroke();});
   D.alarms.forEach((a,k)=>{if(a.day>d)return;const [x,y]=p(...a.xy),age=(Date.parse(d)-Date.parse(a.day))/864e5;
-    if(age<30){c.fillStyle=css("--alarm");c.globalAlpha=age<5?.22:.08;c.beginPath();c.arc(x,y,300*s,0,7);c.fill();c.globalAlpha=age<5?.9:.45;
+    if(age<30&&a.cloud){const pm=a.cloud[0][2];c.fillStyle=css("--alarm");   // evidence cloud: where Guardian's evidence says the leak probably is
+      for(const [cx,cy,pp] of a.cloud){const [qx,qy]=p(cx,cy);c.globalAlpha=(age<5?.75:.35)*Math.max(.12,Math.sqrt(pp/pm));c.beginPath();c.arc(qx,qy,Math.max(3,70*s),0,7);c.fill();}
+      c.globalAlpha=1;}
+    if(age<30){c.fillStyle=css("--alarm");c.globalAlpha=a.cloud?0:(age<5?.22:.08);c.beginPath();c.arc(x,y,300*s,0,7);c.fill();c.globalAlpha=age<5?.9:.45;
       c.strokeStyle=css("--alarm");c.lineWidth=1.2;c.setLineDash([]);c.stroke();c.globalAlpha=1;   // search area (300 m) for recent alarms
       if(showT&&a.near&&TXY[a.near]){const [lx,ly]=p(...TXY[a.near]),col=a.hit?css("--hit"):css("--miss");   // how far the real leak was
         c.strokeStyle=col;c.lineWidth=2;c.setLineDash([5,4]);c.beginPath();c.moveTo(x,y);c.lineTo(lx,ly);c.stroke();c.setLineDash([]);
@@ -189,7 +193,7 @@ function openAlarm(k){const a=D.alarms[k],g=css("--hit"),o=css("--miss"),b=css("
   h+=`<div class="grp">Detect</div>`+st(1,b,"Detect",`The twin's expected pressures and the measured ones kept disagreeing in a leak-like pattern, two nights or more. Estimated size about ${a.size} m³/h.`);
   h+=st(2,dg?(dg.single?o:g):m,"Diagnose",dg?(dg.single?`The change sits mostly on one sensor (${dg.top}). Check that sensor before sending a crew.`:`The change spreads over ${dg.moved} sensors, as a leak's does, not one faulty sensor.`)+(dg.dflow!=null?` Zone night flow changed by ${dg.dflow>0?"+":""}${dg.dflow} m³/h over the same week.`:""):"Too early in the year to compare two weeks.");
   h+=`<div class="grp">Prove</div>`+st(3,cf.untestable?m:(cf.ok?g:o),"Confirm the cause (night pressure test)",cf.untestable?"No PRV in this zone (tank-fed zone C): the test cannot run here.":(cf.q==null?"Test nights not available.":(cf.ok?`Confirmed. Pressure lowered 15 m for 15-minute pulses on ${cf.nights[0]} to ${cf.nights[2]}: the network answered like a pressure-sensitive leak (about ${cf.q} m³/h, ${cf.z} standard deviations above noise).`:`Not confirmed. The pulse test on ${cf.nights[0]} to ${cf.nights[2]} showed no leak-like response here (${cf.z} standard deviations). Recheck before digging.`)));
-  h+=st(4,b,"Locate",`Most likely junction ${a.node}; search area: every pipe within 300 m.`+(showT?(a.hit?` <b style="display:inline;color:${g}">Real leak ${a.near} was ${a.dist} m away.</b>`:` <b style="display:inline;color:${o}">No real leak within 300 m.</b>`):""));
+  h+=st(4,b,"Locate",`Most likely junction ${a.node}; search area: every pipe within 300 m.`+(a.cloud?` The evidence points to ${a.cloud.length} junction${a.cloud.length>1?"s":""} holding 80% of the evidence (${a.cloud.length<=15?"tight: confident":a.cloud.length<=60?"medium":"wide: uncertain, survey more widely"}).`:"")+(showT?(a.hit?` <b style="display:inline;color:${g}">Real leak ${a.near} was ${a.dist} m away.</b>`:` <b style="display:inline;color:${o}">No real leak within 300 m.</b>`):""));
   h+=st(5,b,"Prioritise",`About ${a.prio.m3day} m³ lost per day, about SAR ${a.prio.sarday} per day at SAR 1.7/m³ (desalinated water).`);
   h+=`<div class="grp">Act</div>`+st(6,m,"Compare options","Isolate, lower pressure, or monitor. <i>Planned: not in frozen v5 yet.</i>")+st(7,m,"Optimise","The lowest safe pressure that keeps every customer above 15 m. <i>Planned.</i>")+st(8,m,"Verify and recommend","Check the plan on a second, independent model, then recommend to the operator. <i>Planned.</i>");
   h+=`<p class="sub" style="margin-top:12px">Advisory only: the operator approves every action. Stages 2, 3 and 5 are computed for this replay from the same data; the alarms themselves are frozen Guardian v5.</p><button id="dclose" style="margin-top:6px">Close</button>`;
