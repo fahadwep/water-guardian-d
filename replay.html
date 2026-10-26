@@ -52,12 +52,18 @@ canvas{display:block;width:100%}
 .tile[data-tone="ok"]{border-top-color:var(--hit)} .tile[data-tone="warn"]{border-top-color:var(--warn)} .tile[data-tone="bad"]{border-top-color:var(--alarm)} .tile[data-tone="info"]{border-top-color:var(--accent)}
 .badges{display:flex;gap:8px;flex-wrap:wrap;padding:10px 16px 0;max-width:1600px;margin:0 auto} .badge{font-size:11px;letter-spacing:.6px;text-transform:uppercase;border:1px solid var(--line);border-radius:99px;padding:4px 10px;color:var(--ink2)}
 .stages{list-style:none;margin:0 0 12px;padding:0;display:flex;flex-direction:column;gap:5px}
-.stage{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:var(--card);transition:all .3s}
-.stage .n{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;border:1px solid var(--line);color:var(--muted);font-family:"IBM Plex Mono",monospace}
-.stage .t{font-weight:600;font-size:13px} .stage .d{font-size:11px;color:var(--ink2)} .stage .st{font-size:10px;letter-spacing:.6px;text-transform:uppercase;font-weight:600;color:var(--muted);text-align:right}
-.stage.key{border-color:var(--accent)} .stage[data-s="done"] .n{background:var(--accent);color:var(--onaccent);border-color:var(--accent)} .stage[data-s="done"] .st{color:var(--accent)}
-.stage[data-s="active"]{border-color:var(--warn)} .stage[data-s="active"] .n{border-color:var(--warn);color:var(--warn)} .stage[data-s="active"] .st{color:var(--warn)}
-.stage[data-s="bad"] .n{background:var(--miss);color:#fff;border-color:var(--miss)} .stage[data-s="bad"] .st{color:var(--miss)} .stage[data-s="skip"]{opacity:.55}
+.stages .stage{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:var(--card);transition:all .3s}
+.stages .stage .n{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;border:1px solid var(--line);color:var(--muted);font-family:"IBM Plex Mono",monospace}
+.stages .stage .t{font-weight:600;font-size:13px} .stages .stage .d{font-size:11px;color:var(--ink2)} .stages .stage .st{font-size:10px;letter-spacing:.6px;text-transform:uppercase;font-weight:600;color:var(--muted);text-align:right}
+.stages .stage.key{border-color:var(--accent)} .stages .stage[data-s="done"] .n{background:var(--accent);color:var(--onaccent);border-color:var(--accent)} .stages .stage[data-s="done"] .st{color:var(--accent)}
+.stages .stage[data-s="active"]{border-color:var(--warn)} .stages .stage[data-s="active"] .n{border-color:var(--warn);color:var(--warn)} .stages .stage[data-s="active"] .st{color:var(--warn)}
+.stages .stage[data-s="bad"] .n{background:var(--miss);color:#fff;border-color:var(--miss)} .stages .stage[data-s="bad"] .st{color:var(--miss)} .stages .stage[data-s="skip"]{opacity:.55}
+.ws{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0} .ws th{font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);text-align:right;padding:5px 6px;border-bottom:1px solid var(--line)}
+.ws td{padding:5px 6px;border-bottom:1px solid var(--line);text-align:right;font-family:"IBM Plex Mono",monospace;font-size:12.5px} .ws th:first-child,.ws td:first-child{text-align:left;font-family:inherit}
+.ws tr.pick td{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.pill{display:inline-block;font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:99px;font-family:"IBM Plex Sans",sans-serif}
+.pill.ok{background:color-mix(in srgb,var(--hit) 18%,transparent);color:var(--hit)} .pill.bad{background:color-mix(in srgb,var(--miss) 20%,transparent);color:var(--miss)} .pill.watch{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
+.reccard{margin-top:12px;border:1px solid var(--accent);border-radius:12px;padding:12px 14px;background:color-mix(in srgb,var(--accent) 8%,var(--panel))} .reccard .big{font-size:18px;font-weight:600;font-family:"Readex Pro","IBM Plex Sans",sans-serif}
 @media (max-width:900px){.status{grid-template-columns:repeat(2,minmax(0,1fr))}}
 #story{position:absolute;left:12px;bottom:12px;width:calc(100% - 24px);max-width:520px;background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:12px;padding:14px 16px;box-shadow:0 8px 28px rgba(0,0,0,.28);display:none;z-index:5}
 #story .step{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--accent);font-weight:700} #story h3{margin:4px 0 6px;font-size:18px;font-family:"Readex Pro","IBM Plex Sans",system-ui,sans-serif}
@@ -108,6 +114,7 @@ canvas{display:block;width:100%}
     </div>
     <h2>Alarms as they happen<span class="ar">الإنذارات</span> <span style="font-weight:400;text-transform:none;letter-spacing:0">(click one for its 8 stages)</span></h2><div class="log" id="log"><div class="ev sub">Press Play. Guardian watches every sensor each day and raises an alarm when the pattern matches a leak.</div></div>
   </aside>
+  <section class="panel" style="grid-column:1/-1"><h2>Live evidence · sensors vs twin<span class="ar">الأدلة الحية</span></h2><div class="sub" style="font-size:12px;margin-bottom:4px">The sensors that changed most this week, against the twin's expectation. Guardian raises an alarm only when several move together in a leak's pattern.</div><div style="overflow-x:auto"><table class="ws" id="evid"></table></div></section>
   <div class="charts">
     <section class="panel"><h2>Pressure change from normal at the sensors (cm)<span class="ar">تغير الضغط</span></h2><canvas id="cRes" height="220"></canvas></section>
     <section class="panel"><h2>Night water balance per zone (m³/h above normal)<span class="ar">ميزان المياه الليلي</span></h2><canvas id="cFlow" height="220"></canvas><div class="legend" id="lgFlow"></div></section>
@@ -133,14 +140,20 @@ function proj(w,h){const pad=16,s=Math.min((w-2*pad)/(X1-X0),(h-2*pad)/(Y1-Y0));
 function resColor(z){if(Math.abs(z)<3.5)return css("--muted");const c=Math.min(1,(Math.abs(z)-3.5)/4+.4);return z<0?mix(css("--drop"),c):mix(css("--rise"),c);}   // grey unless it changed this week
 function mix(hex,a){const n=parseInt(hex.slice(1),16),g=css("--muted"),m=parseInt(g.slice(1),16);
   const f=(s)=>Math.round(((n>>s)&255)*a+((m>>s)&255)*(1-a));return `rgb(${f(16)},${f(8)},${f(0)})`;}
-const mapH=w=>Math.round(Math.min(620,w*(Y1-Y0)/(X1-X0)+40,Math.max(300,innerHeight-250)));   // fits phones and 720p projectors
+const mapH=w=>{const top=$("map").getBoundingClientRect().top+scrollY;   // fits phones and 720p projectors: measured from where the map starts
+  return Math.round(Math.min(620,w*(Y1-Y0)/(X1-X0)+40,Math.max(300,innerHeight-top-70)));};
 function drawMap(){const cv=$("map");const [c,w,h]=fit(cv,mapH(cv.clientWidth));const {s,p}=proj(w,h);c.clearRect(0,0,w,h);
-  c.strokeStyle=css("--pipe");c.lineWidth=.8;c.lineCap="round";c.beginPath();for(const q of D.pipes){const a=p(q[0],q[1]),b=p(q[2],q[3]);c.moveTo(...a);c.lineTo(...b);}c.stroke();
+  c.strokeStyle=css("--pipe");c.lineCap="round";const byW={};   // pipe width follows its diameter (mm), like a utility drawing
+  for(const q of D.pipes){const w=q.length>4&&q[4]?Math.min(4,Math.round((0.5+q[4]/120)*2)/2):0.8;(byW[w]=byW[w]||[]).push(q);}
+  for(const [w,qs] of Object.entries(byW)){c.lineWidth=+w;c.beginPath();for(const q of qs){const a=p(q[0],q[1]),b=p(q[2],q[3]);c.moveTo(...a);c.lineTo(...b);}c.stroke();}
   const showT=$("truth").checked, d=D.days[day];
   if(showT){c.fillStyle=css("--truth");for(const t of D.truth){if(t.start<=d&&d<=t.end){const [x,y]=p(...t.xy),r=4+t.max/4;
     c.globalAlpha=.9;c.beginPath();c.moveTo(x,y-r);c.lineTo(x+r,y);c.lineTo(x,y+r);c.lineTo(x-r,y);c.closePath();c.fill();}}c.globalAlpha=1;}
   const res=D.chg[day];D.sxy.forEach((q,i)=>{const [x,y]=p(...q),z=res[i],on=Math.abs(z)>=3.5;c.fillStyle=resColor(z);c.globalAlpha=on?1:.55;c.beginPath();c.arc(x,y,on?5+Math.min(4,(Math.abs(z)-3.5)/1.5):4,0,7);c.fill();c.globalAlpha=1;
     c.strokeStyle=css("--panel");c.lineWidth=1.5;c.stroke();});
+  {const top=D.sxy.map((q,i)=>[Math.abs(res[i]),i]).filter(v=>v[0]>=3.5).sort((u,v)=>v[0]-u[0]).slice(0,5);c.font="11px 'IBM Plex Mono',monospace";c.textAlign="left";c.textBaseline="middle";
+   for(const [,i] of top){const [x,y]=p(...D.sxy[i]),r=D.res[day][i],t=(r>=0?"+":"")+(r==null?"–":r.toFixed(1))+" cm",tw=c.measureText(t).width+8;
+     c.fillStyle=css("--panel");c.globalAlpha=.9;c.fillRect(x+8,y-9,tw,18);c.globalAlpha=1;c.strokeStyle=resColor(res[i]);c.lineWidth=1;c.strokeRect(x+8,y-9,tw,18);c.fillStyle=css("--ink");c.fillText(t,x+12,y);}}
   D.alarms.forEach((a,k)=>{if(a.day>d)return;const [x,y]=p(...a.xy),age=(Date.parse(d)-Date.parse(a.day))/864e5;
     if(age<30&&a.cloud){const pm=a.cloud[0][2];c.fillStyle=css("--alarm");   // evidence cloud: where Guardian's evidence says the leak probably is
       for(const [cx,cy,pp] of a.cloud){const [qx,qy]=p(cx,cy);c.globalAlpha=(age<5?.75:.35)*Math.max(.12,Math.sqrt(pp/pm));c.beginPath();c.arc(qx,qy,Math.max(3,70*s),0,7);c.fill();}
@@ -201,7 +214,10 @@ function drawPanel(){const d=D.days[day],showT=$("truth").checked,seen=D.alarms.
     const t=showT?(a.hit?` <span class="ok">✓ ${a.dist} m from real leak ${a.near}</span>`:` <span class="bad">✗ wrong place</span>`):"";
     return `<div class="ev" data-k="${k-1}"><span class="d">${a.day}</span> · <b>#${k}</b> ${LABEL[a.kind]||a.kind} at ${a.node}, about ${a.size} m³/h.${t}</div>`;}).join("");
   if(html&&html!==$("log")._h){$("log").innerHTML=html;$("log")._h=html;}}
-function draw(){drawMap();drawCharts();drawPanel();drawStrip();toast();$("day").value=day;}
+function drawEvidence(){const z=D.chg[day],r=D.res[day],o=z.map((v,i)=>[Math.abs(v),i]).sort((a,b)=>b[0]-a[0]).slice(0,6);
+  const pill=v=>Math.abs(v)>=6?'<span class="pill bad">Abnormal</span>':Math.abs(v)>=3.5?'<span class="pill watch">Watch</span>':'<span class="pill ok">Normal</span>';
+  $("evid").innerHTML=`<tr><th>Sensor</th><th>Measured − twin today</th><th>Change this week</th><th>Status</th></tr>`+o.map(([,i])=>`<tr><td>${D.sensors[i]}</td><td>${r[i]==null?"–":(r[i]>=0?"+":"")+r[i].toFixed(1)+" cm"}</td><td>${(z[i]>=0?"+":"")+z[i].toFixed(1)}× normal</td><td>${pill(z[i])}</td></tr>`).join("");}
+function draw(){drawMap();drawCharts();drawPanel();drawStrip();drawEvidence();toast();$("day").value=day;}
 // ---------- process strip, pop-ups, year summary ----------
 const STAGES=[["Detect","كشف","twin vs sensors, night water balance"],["Diagnose","تشخيص","leak, or one faulty sensor?"],["Confirm cause","تأكيد السبب","night pressure test",1],["Locate","تحديد الموقع","300 m search area"],["Prioritise","الأولوية","water and money lost per day"],["Compare actions","مقارنة الإجراءات","isolate, lower pressure, monitor"],["Optimise","التحسين","lowest safe pressure (twin)"],["Verify & advise","التحقق والتوصية","second model, then advice",1]];
 $("stages").innerHTML=STAGES.map((x,i)=>`<li class="stage${x[3]?" key":""}" id="sg${i}"><div class="n">${i+1}</div><div><div class="t">${x[0]}<span class="ar">${x[1]}</span></div><div class="d">${x[2]}</div></div><div class="st">Waiting</div></li>`).join("");
@@ -249,13 +265,35 @@ function summary(){const A=D.alarms,near=A.filter(a=>a.hit),wrong=A.filter(a=>!a
   <button class="primary" id="again">Watch again</button> <button id="dclose">Close</button>`;
   $("detail").style.display="flex";$("dclose").onclick=()=>$("detail").style.display="none";$("again").onclick=()=>{$("detail").style.display="none";day=0;lastSeen=-1;$("play").click();};}
 // ---------- stages 6-8 (engine/act.py, development tool; numbers from site/export_actions.py) ----------
+function curveSvg(c,plan){if(!c)return "";const P=c.points,W=520,H=170,L=40,R=44,T=14,B=26,n=P.length-1;
+  const pmax=Math.max(...P.map(p=>p.pmin))+2,pmn=Math.min(c.limit-3,...P.map(p=>p.pmin)),lmax=Math.max(...P.map(p=>p.m3day))||1;
+  const X=k=>L+(W-L-R)*k/Math.max(n,1),YP=v=>H-B-(v-pmn)/(pmax-pmn)*(H-T-B),YL=v=>H-B-v/lmax*(H-T-B),path=f=>P.map((p,i)=>(i?"L":"M")+X(p.step).toFixed(1)+" "+f(p).toFixed(1)).join(" ");
+  const unit=c.kinds.every(k=>k==="prv")?"m":(c.kinds.every(k=>k==="pump")?"steps of 2% pump speed":"steps");
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;margin-top:6px" role="img" aria-label="Optimisation curve">
+  <rect x="${L}" y="${YP(c.limit)}" width="${W-L-R}" height="${H-B-YP(c.limit)}" fill="${css("--alarm")}" fill-opacity=".08"/>
+  <line x1="${L}" x2="${W-R}" y1="${YP(c.limit)}" y2="${YP(c.limit)}" stroke="${css("--alarm")}" stroke-dasharray="4 3"/>
+  <text x="${W-R-2}" y="${YP(c.limit)+12}" text-anchor="end" font-size="10" fill="${css("--alarm")}">safety line ${mb(c.limit)}</text>
+  <path d="${path(p=>YP(p.pmin))}" fill="none" stroke="${css("--accent")}" stroke-width="2"/><path d="${path(p=>YL(p.m3day))}" fill="none" stroke="${css("--miss")}" stroke-width="2" stroke-dasharray="5 3"/>
+  ${[0,Math.round(n/2),n].map(k=>`<text x="${X(k)}" y="${H-8}" text-anchor="middle" font-size="10" fill="${css("--muted")}">${k}</text>`).join("")}
+  <text x="${L}" y="${T-2}" font-size="10" fill="${css("--accent")}">— lowest pressure anywhere (m)</text><text x="${W-R}" y="${T-2}" text-anchor="end" font-size="10" fill="${css("--miss")}">- - leak loss (m³/day)</text>
+  ${[pmn,pmax].map(v=>`<text x="${L-4}" y="${YP(v)+3}" text-anchor="end" font-size="10" fill="${css("--muted")}">${v.toFixed(0)}</text>`).join("")}
+  ${[0,lmax].map(v=>`<text x="${W-R+4}" y="${YL(v)+3}" font-size="10" fill="${css("--muted")}">${Math.round(v)}</text>`).join("")}
+  <text x="${(L+W-R)/2}" y="${H-8+0}" text-anchor="middle" font-size="10" fill="${css("--muted")}" dy="0"></text></svg>
+  <div class="sub" style="font-size:11.5px">x: ${c.controls.join(" and ")} lowered together, in ${unit}. The plan above does better than this straight line: each valve or pump and each 3-hour block gets its own setting.</div>`;}
 function actStages(a,showT){const ac=a.act,g=css("--hit"),o=css("--miss"),b=css("--accent"),m=css("--muted");
   if(!ac)return st(6,m,"Compare options","Not computed for this alarm.");
-  const v=ac.ver,i=ac.iso,lp=v?`about ${v.m3day} m³/day (−${pct(v.m3day,v.m3day0)}%), nobody below 15 m`:"not possible here: no valve or pump setting reaches this spot";
-  let h=st(6,b,"Compare options",`<b style="display:inline">Monitor:</b> about ${ac.monitor} m³ lost per day${money(a)}. <b style="display:inline">Lower pressure:</b> ${lp}. <b style="display:inline">Isolate the 300 m area:</b> stops the leak if it is inside (about 8 in 10 alarms), but closes about ${i.valves} pipes and cuts off ${i.junctions} junctions, about ${i.m3day} m³/day of customers' water${i.outside?` (${i.outside} of them outside the area, fed through it)`:""}.`);
-  h+=st(7,v?b:m,"Optimise: lowest safe pressure",v?`On the twin, every 3 hours, each pressure control is lowered step by step (valves 1 m, pumps 2% speed) while every junction keeps at least ${mb(ac.pmin+1)} (the ${ac.pmin} m service level plus a 1 m safety margin): ${dhText(ac.twin.plan)}. The lowest junction stays at ${ac.twin.pmin} m. Leak flow falls from about ${ac.twin.m3day0} to ${ac.twin.m3day} m³/day (leak flow taken as proportional to pressure).`+(ac.capped?` Stopped by the utility's limit (at most ${ac.cap.m} m lower, pumps at least ${Math.round(100*ac.cap.min_speed)}% speed): more saving was possible, but a buffer is kept for model errors, fire flow and customers.`:""):"No valve or pump setting changes the pressure at this spot, so there is nothing to optimise.");
-  h+=st(8,v?(v.ok?g:o):b,"Verify on a second model, then advise",(v?`Second model: a 24-hour pressure-driven simulation with the model's own demand patterns and a moving tank level (the twin uses measured snapshots). `+(v.tries>1?`The twin's plan fell below ${ac.pmin+1} m (${ac.pmin} m + 1 m safety margin) somewhere (short by ${Math.abs(v.first_margin)} m), so every control was backed off 2 steps${v.tries>2?` (${v.tries-1} times)`:""}; then it passed: `:`The plan kept every junction above ${ac.pmin+1} m first time: `)+`lowest junction ${mb(v.pmin)}, customers get ${(100*Math.min(1,v.served)).toFixed(1)}% of their water, leak about ${v.m3day} m³/day instead of ${v.m3day0}. Final settings: ${dhText(v.plan)}.`:"Nothing to verify. ")+
-    ` <b style="display:inline">Advice to the operator: ${REC[ac.rec]}${(a.confirm||{}).untestable&&ac.rec!=="recheck"?" (not proven by a night test here: survey with acoustic tools first)":""}.</b>`+(showT&&ac.real?` <span style="color:${css("--truth")}">Answer key (real network, hidden from Guardian): the plan ${ac.real.ok?"keeps every junction above the limit":`misses the limit by ${Math.abs(ac.real.margin)} m somewhere`}; all real leaks together would lose ${ac.real.m3day} instead of ${ac.real.m3day0} m³/day (−${pct(ac.real.m3day,ac.real.m3day0)}%).</span>`:""));
+  const v=ac.ver,i=ac.iso,c0=ac.curve&&ac.curve.points[0],untest=(a.confirm||{}).untestable;
+  let h=st(6,b,"Compare actions · next 24 h<span class='ar'>مقارنة الإجراءات</span>",`<table class="ws"><tr><th>Action</th><th>Water lost</th><th>Lowest pressure</th><th>Supply cut</th></tr>
+    <tr${ac.rec==="isolate"?" class='pick'":""}><td>A · Isolate the 300 m area</td><td>≈ 0 m³<br><span style="font-size:10.5px">if the leak is inside (8 in 10)</span></td><td>–</td><td>${i.m3day} m³ · ${i.junctions} junctions${i.outside?` (${i.outside} outside)`:""}</td></tr>
+    <tr${ac.rec==="pressure"?" class='pick'":""}><td>B · Lower pressure${v?" (verified)":""}</td><td>${v?`${v.m3day} m³ (−${pct(v.m3day,v.m3day0)}%)`:"not possible here"}</td><td>${v?mb(v.pmin):"–"}</td><td>0 m³</td></tr>
+    <tr${ac.rec==="repair"||ac.rec==="recheck"?" class='pick'":""}><td>C · Monitor, send a crew</td><td>${ac.monitor} m³${a.prio.cost!=null?`<br><span style="font-size:10.5px">${a.prio.currency} ${a.prio.cost.toLocaleString("en-GB")}</span>`:""}</td><td>${c0?mb(c0.pmin):"–"}</td><td>0 m³</td></tr></table>`);
+  h+=st(7,v?b:m,"Optimise: lowest safe pressure<span class='ar'>التحسين</span>",v?`Twin plan, every 3 hours, every junction at least ${mb(ac.pmin+1)} (the ${ac.pmin} m service level + 1 m safety margin): ${dhText(ac.twin.plan)}. Leak about ${ac.twin.m3day0} → ${ac.twin.m3day} m³/day.`+(ac.capped?` <b style="display:inline">Stopped by the utility's limit</b> (at most ${ac.cap.m} m lower, pumps at least ${Math.round(100*ac.cap.min_speed)}% speed): a buffer for model errors, fire flow and customers.`:"")+curveSvg(ac.curve):"No valve or pump setting changes the pressure at this spot, so there is nothing to optimise.");
+  let vt="";if(v&&v.tries_log)vt=`<table class="ws"><tr><th>Attempt</th><th>Spare above ${ac.pmin+1} m</th><th>Leak (m³/day)</th><th>Result</th></tr>`+v.tries_log.map(t=>`<tr><td>${t.t===1?"Twin's plan":`Backed off ${t.t-1}×2 steps`}</td><td>${t.margin>=0?"+":""}${t.margin} m</td><td>${Math.round(t.m3day)}</td><td>${t.ok?'<span class="pill ok">Pass</span>':'<span class="pill bad">Fail</span>'}</td></tr>`).join("")+`</table>`;
+  h+=st(8,v?(v.ok?g:o):b,"Verify on a second model<span class='ar'>التحقق</span>",(v?`24-hour pressure-driven simulation with the model's own demand patterns and moving tanks (the twin uses measured snapshots).${vt}Final: ${dhText(v.plan)}; customers get ${(100*Math.min(1,v.served)).toFixed(1)}% of their water.`:"Nothing to verify.")+
+    (showT&&ac.real?` <span style="color:${css("--truth")}">Answer key (real network, hidden from Guardian): the plan ${ac.real.ok?"keeps every junction above the limit":`misses the limit by ${Math.abs(ac.real.margin)} m somewhere`}; all real leaks together would lose ${ac.real.m3day} instead of ${ac.real.m3day0} m³/day (−${pct(ac.real.m3day,ac.real.m3day0)}%).</span>`:""));
+  const why={isolate:`Closing the area cuts off less water (${i.m3day} m³/day) than the leak loses (${ac.monitor} m³/day).`,pressure:v?`The verified plan cuts the leak by ${pct(v.m3day,v.m3day0)}% with nobody below ${mb(ac.pmin)}, while a crew pinpoints the leak (acoustic survey) and repairs it.`:"",
+    recheck:"The night pressure test did not show a leak-like response here. Repeat the test or check the sensors before anyone digs.",repair:"No safe pressure change helps at this spot; send a crew to survey the area and plan the repair."}[ac.rec]||"";
+  h+=`<div class="reccard"><div class="grp" style="margin:0">Recommendation<span class="ar">توصية</span></div><div class="big">${REC[ac.rec]}${untest&&ac.rec!=="recheck"?" (survey first: no night test possible here)":""}</div><div class="sub">${why} Guardian is advisory: the operator approves every action.</div></div>`;
   return h;}
 // ---------- the 8 stages for one alarm ----------
 function st(n,col,title,text){return `<div class="stage"><div class="n" style="background:${col}">${n}</div><div><b>${title}</b><span>${text}</span></div></div>`;}
