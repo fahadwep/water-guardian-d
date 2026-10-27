@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>إعادة حارس الشبكة</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;600&family=IBM+Plex+Mono:wght@400;500&family=Readex+Pro:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F3F6F5;--panel:#FBFCFB;--ink:#13222F;--ink2:#45566A;--muted:#7A8A98;--line:#D6E0DF;--pipe:#C3CFCE;
+--drop:#D9483B;--rise:#2A78D6;--alarm:#D9483B;--hit:#0E8A5F;--miss:#E07A1F;--truth:#6250D6;--accent:#0E7C78;--card:#E8EFEE;--onaccent:#FFFFFF;--warn:#C9971A}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0D1B2A;--panel:#13263A;--ink:#EEF4F3;--ink2:#B4C7CC;--muted:#7F96A3;--line:#2A4862;--pipe:#2F4B63;
+--drop:#F06A5A;--rise:#5AA2F0;--alarm:#F06A5A;--hit:#3CC48A;--miss:#F0A040;--truth:#A99CF5;--accent:#3CC4BC;--card:#1A3149;--onaccent:#0D1B2A;--warn:#F2C14E}}
+:root[data-theme="dark"]{--bg:#0D1B2A;--panel:#13263A;--ink:#EEF4F3;--ink2:#B4C7CC;--muted:#7F96A3;--line:#2A4862;--pipe:#2F4B63;
+--drop:#F06A5A;--rise:#5AA2F0;--alarm:#F06A5A;--hit:#3CC48A;--miss:#F0A040;--truth:#A99CF5;--accent:#3CC4BC;--card:#1A3149;--onaccent:#0D1B2A;--warn:#F2C14E}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans Arabic","IBM Plex Sans",system-ui,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums}
+h1,h2,.date,.big,.kpi b{font-family:"IBM Plex Sans Arabic","Readex Pro",system-ui,sans-serif}
+header{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
+h1{font-size:20px;margin:0;letter-spacing:.2px} .brand{width:10px;height:28px;border-radius:3px;background:var(--accent);display:inline-block;margin-right:10px;vertical-align:-6px} .sub{color:var(--ink2);font-size:13px}
+.date{font-size:30px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;min-width:170px}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+button,select{font:inherit;font-size:14px;padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--onaccent);font-weight:600;min-width:96px}
+label.sw{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--ink2);cursor:pointer}
+.scrub{flex:1 1 300px;display:flex;align-items:center;gap:8px} input[type=range]{width:100%;accent-color:var(--accent)}
+main{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:14px;padding:14px 16px;max-width:1600px;margin:0 auto}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;min-width:0;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.panel h2{font-size:13px;margin:0 0 10px;color:var(--ink2);font-weight:600;letter-spacing:1.2px;text-transform:uppercase}
+canvas{display:block;width:100%}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.kpi{background:var(--card);border-radius:10px;padding:12px} .kpi b{display:block;font-size:28px;color:var(--accent);font-variant-numeric:tabular-nums} .kpi span{font-size:12px;color:var(--ink2)}
+.log{max-height:420px;overflow:auto;font-size:13px} .ev{padding:8px 4px;border-bottom:1px solid var(--line)} .ev:first-child{animation:flash 1.2s}
+@keyframes flash{from{background:color-mix(in srgb,var(--alarm) 25%,transparent)}to{background:transparent}}
+.ev .d{color:var(--muted);font-variant-numeric:tabular-nums} .ok{color:var(--hit);font-weight:600} .bad{color:var(--miss);font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--ink2);margin-top:8px} .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px}
+.charts{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.note{font-size:12px;color:var(--muted);padding:0 16px 20px}
+.ev{cursor:pointer} .ev:hover{background:var(--card)}
+.strip{display:flex;gap:6px;align-items:stretch;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel);overflow-x:auto}
+.strip .lab{font-size:12px;color:var(--ink2);min-width:150px;max-width:190px;align-self:center} .chip{flex:1 1 0;min-width:78px;border-radius:8px;padding:6px 8px;background:var(--card);color:var(--muted);font-size:12px;line-height:1.25;border:1px solid var(--line);transition:all .3s}
+.chip b{display:block;font-size:13px} .chip.on{background:var(--accent);border-color:var(--accent);color:#fff} .chip.ok{background:var(--hit);border-color:var(--hit);color:#fff} .chip.bad{background:var(--miss);border-color:var(--miss);color:#fff} .chip.plan{opacity:.55;border-style:dashed}
+#toast{position:fixed;right:16px;bottom:16px;max-width:360px;background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--alarm);border-radius:10px;padding:12px 14px;font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.25);opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;z-index:8}
+#toast.show{opacity:1;transform:none}
+.big{font-size:40px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--accent)} .sumgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+#detail{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:9}
+#detail .card{background:var(--panel);color:var(--ink);border-radius:12px;max-width:640px;width:100%;max-height:90vh;overflow:auto;padding:20px 22px;border:1px solid var(--line)}
+.stage{display:grid;grid-template-columns:34px 1fr;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)} .stage .n{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:13px;color:#fff}
+.stage b{display:block;font-size:14px} .stage span{font-size:13px;color:var(--ink2)} .grp{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--accent);margin-top:12px;font-weight:700}
+.mapwrap{position:relative}
+/* console layout (ideas from the stage-1 live simulator): status tiles, Arabic labels, decision pipeline, honesty badges */
+.ar{font-family:"IBM Plex Sans Arabic","IBM Plex Sans",Tahoma,sans-serif;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0;margin-left:6px}
+.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+.status{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:12px 16px 0;max-width:1600px;margin:0 auto}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px;min-width:0;border-top:4px solid var(--line);transition:border-color .3s}
+.tile .k{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:600} .tile .v{font-size:18px;font-weight:600;margin-top:2px;font-family:"Readex Pro","IBM Plex Sans",sans-serif} .tile .s{font-size:12px;color:var(--ink2)}
+.tile[data-tone="ok"]{border-top-color:var(--hit)} .tile[data-tone="warn"]{border-top-color:var(--warn)} .tile[data-tone="bad"]{border-top-color:var(--alarm)} .tile[data-tone="info"]{border-top-color:var(--accent)}
+.badges{display:flex;gap:8px;flex-wrap:wrap;padding:10px 16px 0;max-width:1600px;margin:0 auto} .badge{font-size:11px;letter-spacing:.6px;text-transform:uppercase;border:1px solid var(--line);border-radius:99px;padding:4px 10px;color:var(--ink2)}
+.stages{list-style:none;margin:0 0 12px;padding:0;display:flex;flex-direction:column;gap:5px}
+.stages .stage{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:var(--card);transition:all .3s}
+.stages .stage .n{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;border:1px solid var(--line);color:var(--muted);font-family:"IBM Plex Mono",monospace}
+.stages .stage .t{font-weight:600;font-size:13px} .stages .stage .d{font-size:11px;color:var(--ink2)} .stages .stage .st{font-size:10px;letter-spacing:.6px;text-transform:uppercase;font-weight:600;color:var(--muted);text-align:right}
+.stages .stage.key{border-color:var(--accent)} .stages .stage[data-s="done"] .n{background:var(--accent);color:var(--onaccent);border-color:var(--accent)} .stages .stage[data-s="done"] .st{color:var(--accent)}
+.stages .stage[data-s="active"]{border-color:var(--warn)} .stages .stage[data-s="active"] .n{border-color:var(--warn);color:var(--warn)} .stages .stage[data-s="active"] .st{color:var(--warn)}
+.stages .stage[data-s="bad"] .n{background:var(--miss);color:#fff;border-color:var(--miss)} .stages .stage[data-s="bad"] .st{color:var(--miss)} .stages .stage[data-s="skip"]{opacity:.55}
+.ws{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0} .ws th{font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);text-align:right;padding:5px 6px;border-bottom:1px solid var(--line)}
+.ws td{padding:5px 6px;border-bottom:1px solid var(--line);text-align:right;font-family:"IBM Plex Mono",monospace;font-size:12.5px} .ws th:first-child,.ws td:first-child{text-align:left;font-family:inherit}
+.ws tr.pick td{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.pill{display:inline-block;font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:99px;font-family:"IBM Plex Sans",sans-serif}
+.pill.ok{background:color-mix(in srgb,var(--hit) 18%,transparent);color:var(--hit)} .pill.bad{background:color-mix(in srgb,var(--miss) 20%,transparent);color:var(--miss)} .pill.watch{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
+.reccard{margin-top:12px;border:1px solid var(--accent);border-radius:12px;padding:12px 14px;background:color-mix(in srgb,var(--accent) 8%,var(--panel))} .reccard .big{font-size:18px;font-weight:600;font-family:"Readex Pro","IBM Plex Sans",sans-serif}
+@media (max-width:900px){.status{grid-template-columns:repeat(2,minmax(0,1fr))}}
+#story{position:absolute;left:12px;bottom:12px;width:calc(100% - 24px);max-width:520px;background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:12px;padding:14px 16px;box-shadow:0 8px 28px rgba(0,0,0,.28);display:none;z-index:5}
+#story .step{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--accent);font-weight:700} #story h3{margin:4px 0 6px;font-size:18px;font-family:"Readex Pro","IBM Plex Sans",system-ui,sans-serif}
+#story p{margin:0 0 10px;font-size:14px;line-height:1.45;color:var(--ink2)} #story p b{color:var(--ink)} #story .row{display:flex;gap:8px;flex-wrap:wrap}
+#tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12.5px;line-height:1.35;padding:6px 9px;border-radius:7px;max-width:260px;z-index:7;display:none;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+#tip b{font-weight:700}
+.howgrid{display:grid;grid-template-columns:28px 1fr;gap:9px 10px;align-items:start;font-size:14px;color:var(--ink2);margin:10px 0} .howgrid b{color:var(--ink)}
+.sym{width:22px;height:22px;display:grid;place-items:center}
+@media (max-width:900px){main{grid-template-columns:1fr}.charts{grid-template-columns:1fr}}
+@media (max-width:700px){.strip{flex-wrap:wrap}.strip .lab{flex:1 0 100%;min-width:0;max-width:none}#toast{left:12px;right:12px;max-width:none}.chip{flex:1 0 calc(25% - 6px);padding:5px 6px;font-size:11px}.chip b{font-size:12px}
+  #story{position:static;margin-top:10px;max-width:none;width:auto;box-shadow:none}.date{font-size:24px;min-width:0}header{padding:12px}main{padding:12px;gap:12px}}
+@media (min-width:1500px){body{font-size:17px}.legend,.ev,.log{font-size:14px}.chip{font-size:13px}.chip b{font-size:15px}.panel h2{font-size:15px}.kpi span{font-size:14px}#story p{font-size:16px}#story h3{font-size:22px}}
+</style></head><body>
+<header>
+  <div><h1><span class="brand"></span>حارس الشبكة · سنة كاملة تُعرض مباشرة</h1><div class="sub" id="sub">إل-تاون 2019 · توأم رقمي + موازنة ليلية</div></div>
+  <div class="date" id="date">-</div>
+  <div class="controls">
+    <button class="primary" id="play">تشغيل</button>
+    <button id="storyBtn" title="تعرض السنة وتتوقف عند لحظات مهمة مع شرح">وضع القصة</button>
+    <button id="helpBtn" title="معنى الخريطة والألوان والرسوم">كيف تقرأ الصفحة</button>
+    <select id="speed" aria-label="السرعة"><option value="1">يوم/ث</option><option value="3">3 أيام/ث</option><option value="7" selected>7 أيام/ث</option><option value="15">15 يومًا/ث</option></select>
+    <label class="sw"><input type="checkbox" id="truth"> إظهار التسربات الحقيقية</label>
+  </div>
+  <div class="scrub"><input type="range" id="day" min="0" value="0" aria-label="يوم السنة"></div>
+</header>
+<section class="status" aria-label="الحالة الآن">
+  <div class="tile" id="tState"><div class="k">الحالة</div><div class="v">مراقبة</div><div class="s">التوأم والحساسات متفقان</div></div>
+  <div class="tile" id="tCause"><div class="k">السبب المرجح</div><div class="v">لا شيء</div><div class="s">لا انحراف مستمر</div></div>
+  <div class="tile" id="tConf"><div class="k">تأكيد السبب</div><div class="v">غير مطلوب</div><div class="s">لا شيء لاختباره</div></div>
+  <div class="tile" id="tDec"><div class="k">القرار</div><div class="v">استمر في المراقبة</div><div class="s">لا إجراء مطلوب</div></div>
+</section>
+<div class="badges"><span class="badge">محاكاة</span><span class="badge">استشاري: المشغّل يعتمد كل إجراء</span></div>
+<div id="toast"></div><div id="tip"></div>
+<main>
+  <section class="panel"><h2>خريطة الشبكة</h2><div class="mapwrap"><canvas id="map" height="620"></canvas><div id="story" role="status" aria-live="polite"></div></div>
+    <div class="legend"><span><span class="dot" style="background:var(--muted)"></span>حساس طبيعي</span><span><span class="dot" style="background:var(--drop)"></span>انخفض الضغط هذا الأسبوع</span>
+      <span><span class="dot" style="background:var(--rise)"></span>ارتفع هذا الأسبوع</span>
+      <span><span class="dot" style="background:var(--alarm);opacity:.6"></span>سحابة الأدلة: أين تقول البيانات إن التسرب على الأرجح (80% من الأدلة؛ الضيقة = ثقة أعلى)</span>
+      <span><span class="dot" style="border:1.5px solid var(--alarm);background:none"></span>منطقة بحث 300 م حول أفضل موقع</span>
+      <span id="lgT" hidden><span class="dot" style="background:var(--truth)"></span>تسرب حقيقي (مخفي عن حارس الشبكة)</span></div></section>
+  <aside class="panel">
+    <h2>مراحل القرار</h2><ol class="stages" id="stages"></ol>
+    <div class="kpis">
+      <div class="kpi"><b id="kDay">0</b><span>يوم من 365</span></div>
+      <div class="kpi"><b id="kAl">0</b><span>إنذارات حتى الآن</span></div>
+      <div class="kpi" id="kT1" hidden><b id="kRun">0</b><span>تسربات حقيقية قائمة</span></div>
+      <div class="kpi" id="kT2" hidden><b id="kHit">0</b><span>إنذارات ضمن 300 م من تسرب حقيقي</span></div>
+    </div>
+    <h2>الإنذارات لحظة حدوثها <span style="font-weight:400;text-transform:none;letter-spacing:0">(اضغط على إنذار لمراحله الثماني)</span></h2><div class="log" id="log"><div class="ev sub">اضغط تشغيل.</div></div>
+  </aside>
+  <section class="panel" style="grid-column:1/-1"><h2>الأدلة الحية · الحساسات مقابل التوأم</h2><div class="sub" style="font-size:12px;margin-bottom:4px">الحساسات الأكثر تغيرًا هذا الأسبوع. الإنذار يحتاج عدة حساسات تتحرك معًا.</div><div style="overflow-x:auto"><table class="ws" id="evid"></table></div></section>
+  <div class="charts">
+    <section class="panel"><h2>تغير الضغط عن المعتاد عند الحساسات (سم)</h2><canvas id="cRes" height="220"></canvas></section>
+    <section class="panel"><h2>موازنة المياه الليلية لكل منطقة (م³/ساعة فوق المعتاد)</h2><canvas id="cFlow" height="220"></canvas><div class="legend" id="lgFlow"></div></section>
+  </div>
+</main>
+<p class="note"><span id="credit">تشغيل واحد لحارس الشبكة على بيانات BattLeDIM لإل-تاون 2019 (Vrachimis وآخرون 2022، Zenodo 4017659، CC BY 4.0).</span> لا يرى حارس الشبكة التسربات الحقيقية أبدًا.</p>
+<div id="detail" role="dialog" aria-modal="true"><div class="card" id="dcard"></div></div>
+<script src="replay_data.js"></script>
+<script>
+const D=window.REPLAY, N=D.days.length, $=id=>document.getElementById(id), bd=s=>"\u2066"+s+"\u2069";   // dates read left to right inside Arabic text
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const TXY=Object.fromEntries((window.REPLAY.truth||[]).map(t=>[t.pipe,t.xy]));
+const LABEL={new:"تسرب جديد (نمط ضغط)",growth:"تسرب معروف كبر",relocate:"تصحيح الموقع",flow:"الموازنة الليلية"};
+let day=0, playing=false, last=0, acc=0, focus=null, story=null;   // story: index of the next story moment, null when off
+$("day").max=N-1;
+// ---------- map geometry ----------
+const xs=D.pipes.flatMap(p=>[p[0],p[2]]), ys=D.pipes.flatMap(p=>[p[1],p[3]]);
+const X0=Math.min(...xs),X1=Math.max(...xs),Y0=Math.min(...ys),Y1=Math.max(...ys);
+function fit(cv,hh){const r=window.devicePixelRatio||1,w=cv.clientWidth,h=hh||cv.height/ (cv._r||1);cv._r=r;cv.width=w*r;cv.height=h*r;cv.style.height=h+"px";
+  const ctx=cv.getContext("2d");ctx.setTransform(r,0,0,r,0,0);return [ctx,w,h];}
+function proj(w,h){const pad=16,s=Math.min((w-2*pad)/(X1-X0),(h-2*pad)/(Y1-Y0));const ox=(w-s*(X1-X0))/2,oy=(h-s*(Y1-Y0))/2;
+  return {s,p:(x,y)=>[ox+(x-X0)*s,h-(oy+(y-Y0)*s)]};}
+function resColor(z){if(Math.abs(z)<3.5)return css("--muted");const c=Math.min(1,(Math.abs(z)-3.5)/4+.4);return z<0?mix(css("--drop"),c):mix(css("--rise"),c);}   // grey unless it changed this week
+function mix(hex,a){const n=parseInt(hex.slice(1),16),g=css("--muted"),m=parseInt(g.slice(1),16);
+  const f=(s)=>Math.round(((n>>s)&255)*a+((m>>s)&255)*(1-a));return `rgb(${f(16)},${f(8)},${f(0)})`;}
+const mapH=w=>{const top=$("map").getBoundingClientRect().top+scrollY;   // fits phones and 720p projectors: measured from where the map starts
+  return Math.round(Math.min(620,w*(Y1-Y0)/(X1-X0)+40,Math.max(300,innerHeight-top-70)));};
+function drawMap(){const cv=$("map");const [c,w,h]=fit(cv,mapH(cv.clientWidth));const {s,p}=proj(w,h);c.clearRect(0,0,w,h);
+  c.strokeStyle=css("--pipe");c.lineCap="round";const byW={};   // pipe width follows its diameter (mm), like a utility drawing
+  for(const q of D.pipes){const w=q.length>4&&q[4]?Math.min(4,Math.round((0.5+q[4]/120)*2)/2):0.8;(byW[w]=byW[w]||[]).push(q);}
+  for(const [w,qs] of Object.entries(byW)){c.lineWidth=+w;c.beginPath();for(const q of qs){const a=p(q[0],q[1]),b=p(q[2],q[3]);c.moveTo(...a);c.lineTo(...b);}c.stroke();}
+  const showT=$("truth").checked, d=D.days[day];
+  if(showT){c.fillStyle=css("--truth");for(const t of D.truth){if(t.start<=d&&d<=t.end){const [x,y]=p(...t.xy),r=4+t.max/4;
+    c.globalAlpha=.9;c.beginPath();c.moveTo(x,y-r);c.lineTo(x+r,y);c.lineTo(x,y+r);c.lineTo(x-r,y);c.closePath();c.fill();}}c.globalAlpha=1;}
+  const res=D.chg[day];D.sxy.forEach((q,i)=>{const [x,y]=p(...q),z=res[i],on=Math.abs(z)>=3.5;c.fillStyle=resColor(z);c.globalAlpha=on?1:.55;c.beginPath();c.arc(x,y,on?5+Math.min(4,(Math.abs(z)-3.5)/1.5):4,0,7);c.fill();c.globalAlpha=1;
+    c.strokeStyle=css("--panel");c.lineWidth=1.5;c.stroke();});
+  {const top=D.sxy.map((q,i)=>[Math.abs(res[i]),i]).filter(v=>v[0]>=3.5).sort((u,v)=>v[0]-u[0]).slice(0,5);c.font="11px 'IBM Plex Mono',monospace";c.textAlign="left";c.textBaseline="middle";
+   for(const [,i] of top){const [x,y]=p(...D.sxy[i]),r=D.res[day][i],t=(r>=0?"+":"")+(r==null?"–":r.toFixed(1))+" cm",tw=c.measureText(t).width+8;
+     c.fillStyle=css("--panel");c.globalAlpha=.9;c.fillRect(x+8,y-9,tw,18);c.globalAlpha=1;c.strokeStyle=resColor(res[i]);c.lineWidth=1;c.strokeRect(x+8,y-9,tw,18);c.fillStyle=css("--ink");c.fillText(t,x+12,y);}}
+  D.alarms.forEach((a,k)=>{if(a.day>d)return;const [x,y]=p(...a.xy),age=(Date.parse(d)-Date.parse(a.day))/864e5;
+    if(age<30&&a.cloud){const pm=a.cloud[0][2];c.fillStyle=css("--alarm");   // evidence cloud: where Guardian's evidence says the leak probably is
+      for(const [cx,cy,pp] of a.cloud){const [qx,qy]=p(cx,cy);c.globalAlpha=(age<5?.75:.35)*Math.max(.12,Math.sqrt(pp/pm));c.beginPath();c.arc(qx,qy,Math.max(3,70*s),0,7);c.fill();}
+      c.globalAlpha=1;}
+    if(age<30){c.fillStyle=css("--alarm");c.globalAlpha=a.cloud?0:(age<5?.22:.08);c.beginPath();c.arc(x,y,300*s,0,7);c.fill();c.globalAlpha=age<5?.9:.45;
+      c.strokeStyle=css("--alarm");c.lineWidth=1.2;c.setLineDash([]);c.stroke();c.globalAlpha=1;   // search area (300 m) for recent alarms
+      if(showT&&a.near&&TXY[a.near]){const [lx,ly]=p(...TXY[a.near]),col=a.hit?css("--hit"):css("--miss");   // how far the real leak was
+        c.strokeStyle=col;c.lineWidth=2;c.setLineDash([5,4]);c.beginPath();c.moveTo(x,y);c.lineTo(lx,ly);c.stroke();c.setLineDash([]);
+        const mx=(x+lx)/2,my=(y+ly)/2,t=a.dist+" m";c.font="bold 12px 'IBM Plex Sans',system-ui";const tw=c.measureText(t).width+8;
+        c.fillStyle=css("--panel");c.fillRect(mx-tw/2,my-9,tw,18);c.strokeStyle=col;c.lineWidth=1;c.strokeRect(mx-tw/2,my-9,tw,18);
+        c.fillStyle=col;c.textAlign="center";c.textBaseline="middle";c.fillText(t,mx,my);}}
+    if(age<5){c.strokeStyle=css("--alarm");c.lineWidth=2;c.globalAlpha=1-age/5;c.beginPath();c.arc(x,y,6+age*6,0,7);c.stroke();c.globalAlpha=1;}
+    c.fillStyle=showT?(a.hit?css("--hit"):css("--miss")):css("--alarm");c.beginPath();c.arc(x,y,7,0,7);c.fill();
+    c.fillStyle="#fff";c.font="bold 9px system-ui";c.textAlign="center";c.textBaseline="middle";c.fillText(k+1,x,y+.5);});
+  const lastA=focus!=null?D.alarms[focus]:D.alarms.filter(a=>a.day<=d).pop();if(lastA&&lastA.day<=d){const [x,y]=p(...lastA.xy);c.strokeStyle=css("--ink");c.lineWidth=2;c.beginPath();c.arc(x,y,11,0,7);c.stroke();}
+  const sb=500*s,bx=w-sb-18,by=h-16;c.strokeStyle=css("--ink2");c.fillStyle=css("--ink2");c.lineWidth=2;c.beginPath();c.moveTo(bx,by);c.lineTo(bx+sb,by);c.moveTo(bx,by-5);c.lineTo(bx,by+1);c.moveTo(bx+sb,by-5);c.lineTo(bx+sb,by+1);c.stroke();
+  c.font="12px 'IBM Plex Sans',system-ui";c.textAlign="center";c.textBaseline="bottom";c.fillText("500 م",bx+sb/2,by-4);}
+// ---------- charts (drawn up to the current day) ----------
+function chart(id,series,colors,unit,marks){const cv=$(id);const [c,w,h]=fit(cv);c.clearRect(0,0,w,h);
+  const L=36,B=20,T=8,Rr=8,all=series.flat().filter(v=>v!=null&&isFinite(v));let lo=Math.min(0,...all),hi=Math.max(0,...all);if(hi-lo<1){hi+=.5;lo-=.5;}
+  const X=i=>L+(w-L-Rr)*i/(N-1),Y=v=>T+(h-T-B)*(hi-v)/(hi-lo);
+  c.strokeStyle=css("--line");c.fillStyle=css("--muted");c.font="11px system-ui";c.lineWidth=1;
+  for(const v of [lo,0,hi]){const y=Y(v);c.beginPath();c.moveTo(L,y);c.lineTo(w-Rr,y);c.stroke();c.textAlign="right";c.textBaseline="middle";c.fillText(v.toFixed(0),L-4,y);}
+  c.textAlign="center";c.textBaseline="top";["يناير","أبريل","يوليو","أكتوبر"].forEach((m,i)=>c.fillText(m,X(Math.round(i*N/4)),h-B+4));
+  for(const a of marks){const i=D.days.indexOf(a.day);if(i<0||i>day)continue;c.strokeStyle=css("--alarm");c.globalAlpha=.35;c.beginPath();c.moveTo(X(i),T);c.lineTo(X(i),h-B);c.stroke();}c.globalAlpha=1;
+  series.forEach((s,k)=>{c.strokeStyle=colors[k];c.lineWidth=colors.length>4?1:2;c.globalAlpha=colors.length>4?.55:1;c.beginPath();let up=false;
+    for(let i=0;i<=day;i++){const v=s[i];if(v==null||!isFinite(v)){up=false;continue;}const p=[X(i),Y(v)];up?c.lineTo(...p):c.moveTo(...p);up=true;}c.stroke();});c.globalAlpha=1;
+  c.strokeStyle=css("--ink");c.lineWidth=1;c.beginPath();c.moveTo(X(day),T);c.lineTo(X(day),h-B);c.stroke();}
+const q=(a,f)=>{const b=a.filter(v=>v!=null).sort((x,y)=>x-y);return b.length?b[Math.min(b.length-1,Math.floor(f*(b.length-1)))]:null;};
+const BAND={lo:D.res.map(r=>q(r,0)),q1:D.res.map(r=>q(r,.25)),med:D.res.map(r=>q(r,.5)),q3:D.res.map(r=>q(r,.75)),hi:D.res.map(r=>q(r,1))};
+const worst=D.res.map(r=>r.reduce((m,v,j)=>Math.abs(v)>Math.abs(r[m])?j:m,0));
+const flowSeries=D.zones.map((z,k)=>D.flow.map(r=>r[k]==null?null:r[k]-D.norm[z]));
+function bandChart(id){const cv=$(id);const [c,w,h]=fit(cv);c.clearRect(0,0,w,h);
+  const L=36,B=20,T=40,Rr=8;let lo=Math.min(0,...BAND.lo.filter(v=>v!=null)),hi=Math.max(2,...BAND.hi.filter(v=>v!=null));
+  const X=i=>L+(w-L-Rr)*i/(N-1),Y=v=>T+(h-T-B)*(hi-v)/(hi-lo);
+  c.strokeStyle=css("--line");c.fillStyle=css("--muted");c.font="11px 'IBM Plex Sans',system-ui";c.lineWidth=1;
+  for(const v of [lo,0,hi]){const y=Y(v);c.beginPath();c.moveTo(L,y);c.lineTo(w-Rr,y);c.stroke();c.textAlign="right";c.textBaseline="middle";c.fillText(v.toFixed(0),L-4,y);}
+  c.textAlign="center";c.textBaseline="top";["يناير","أبريل","يوليو","أكتوبر"].forEach((m,i)=>c.fillText(m,X(Math.round(i*N/4)),h-B+4));
+  for(const a of D.alarms){const i=D.days.indexOf(a.day);if(i<0||i>day)continue;c.strokeStyle=css("--alarm");c.globalAlpha=.25;c.beginPath();c.moveTo(X(i),T);c.lineTo(X(i),h-B);c.stroke();}c.globalAlpha=1;
+  const area=(A,Bv,alpha)=>{c.fillStyle=css("--accent");c.globalAlpha=alpha;c.beginPath();for(let i=0;i<=day;i++)c.lineTo(X(i),Y(A[i]));for(let i=day;i>=0;i--)c.lineTo(X(i),Y(Bv[i]));c.closePath();c.fill();c.globalAlpha=1;};
+  area(BAND.lo,BAND.hi,.10);area(BAND.q1,BAND.q3,.28);
+  const line=(f,col,lw)=>{c.strokeStyle=col;c.lineWidth=lw;c.beginPath();for(let i=0;i<=day;i++){const p=[X(i),Y(f(i))];i?c.lineTo(...p):c.moveTo(...p);}c.stroke();};
+  line(i=>D.res[i][worst[day]],css("--alarm"),1.2);line(i=>BAND.med[i],css("--accent"),2.4);
+  c.strokeStyle=css("--ink");c.lineWidth=1;c.beginPath();c.moveTo(X(day),T);c.lineTo(X(day),h-B);c.stroke();
+  c.font="12px 'IBM Plex Sans',system-ui";c.textAlign="left";c.textBaseline="top";c.fillStyle=css("--accent");c.fillText(`— الحساس النموذجي (المظلل: انتشار كل الحساسات الـ ${D.sensors.length})`,L,4);
+  c.fillStyle=css("--alarm");c.fillText("— الحساس الأكثر تغيرًا اليوم: "+D.sensors[worst[day]],L,20);}
+function drawCharts(){bandChart("cRes");
+  chart("cFlow",flowSeries,FCOL(),"m3/h",D.alarms.filter(a=>a.kind==="flow"));
+  $("lgFlow").innerHTML=D.zones.map((z,k)=>`<span><span class="dot" style="background:${FCOL()[k]}"></span>${ZNAME[z]||z}</span>`).join("");}
+const FCOL=()=>D.zones.map((_,k)=>[css("--accent"),css("--miss"),css("--hit")][k%3]);
+const ZNAME=Object.keys(D.zone_names||{}).length?D.zone_names:(D.zones.length===1?{[D.zones[0]]:"الشبكة كاملة"}:{zone0:"المنطقة C (يغذيها الخزان)",zone1:"المنطقتان A+B (تُغذّيان عبر صمامات خفض الضغط)"});
+// ---------- panel ----------
+function drawPanel(){const d=D.days[day],showT=$("truth").checked,seen=D.alarms.filter(a=>a.day<=d);
+  $("date").textContent=new Date(d).toLocaleDateString("ar-u-nu-latn",{day:"numeric",month:"short",year:"numeric"});$("kDay").textContent=day+1;$("kAl").textContent=seen.length;
+  ["kT1","kT2","lgT"].forEach(i=>$(i).hidden=!showT);
+  $("kRun").textContent=D.truth.filter(t=>t.start<=d&&d<=t.end).length;$("kHit").textContent=seen.filter(a=>a.hit).length+" / "+seen.length;
+  const html=seen.slice().reverse().map((a,i)=>{const k=D.alarms.indexOf(a)+1;
+    const t=showT?(a.hit?` <span class="ok">✓ ${a.dist} م من التسرب الحقيقي ${a.near}</span>`:` <span class="bad">✗ مكان خاطئ</span>`):"";
+    return `<div class="ev" data-k="${k-1}"><span class="d">${bd(a.day)}</span> · <b>#${k}</b> ${LABEL[a.kind]||a.kind} عند ${a.node}، حوالي ${a.size} م³/ساعة.${t}</div>`;}).join("");
+  if(html&&html!==$("log")._h){$("log").innerHTML=html;$("log")._h=html;}}
+function drawEvidence(){const z=D.chg[day],r=D.res[day],o=z.map((v,i)=>[Math.abs(v),i]).sort((a,b)=>b[0]-a[0]).slice(0,6);
+  const pill=v=>Math.abs(v)>=6?'<span class="pill bad">غير طبيعي</span>':Math.abs(v)>=3.5?'<span class="pill watch">مراقبة</span>':'<span class="pill ok">طبيعي</span>';
+  $("evid").innerHTML=`<tr><th>الحساس</th><th>المقاس − التوأم اليوم</th><th>التغير هذا الأسبوع</th><th>الحالة</th></tr>`+o.map(([,i])=>`<tr><td>${D.sensors[i]}</td><td>${r[i]==null?"–":(r[i]>=0?"+":"")+r[i].toFixed(1)+" cm"}</td><td>${(z[i]>=0?"+":"")+z[i].toFixed(1)}× المعتاد</td><td>${pill(z[i])}</td></tr>`).join("");}
+function draw(){drawMap();drawCharts();drawPanel();drawStrip();drawEvidence();toast();$("day").value=day;}
+// ---------- process strip, pop-ups, year summary ----------
+const STAGES=[["الكشف","","التوأم مقابل الحساسات، الموازنة الليلية"],["التشخيص","","تسرب أم حساس معطوب؟"],["تأكيد السبب","","اختبار الضغط الليلي",1],["التحديد","","منطقة بحث 300 م"],["الأولوية","","الماء والمال المفقود يوميًا"],["مقارنة الإجراءات","","عزل، خفض الضغط، مراقبة"],["التحسين","","أقل ضغط آمن (التوأم)"],["التحقق والتوصية","","نموذج ثانٍ ثم التوصية",1]];
+$("stages").innerHTML=STAGES.map((x,i)=>`<li class="stage${x[3]?" key":""}" id="sg${i}"><div class="n">${i+1}</div><div><div class="t">${x[0]}<span class="ar">${x[1]}</span></div><div class="d">${x[2]}</div></div><div class="st">بانتظار</div></li>`).join("");
+function setStage(i,st,label){const li=$("sg"+i);li.dataset.s=st;li.querySelector(".st").textContent=label||({done:"تم",active:"جارٍ",skip:"غير مطلوب",wait:"بانتظار",bad:"افحص"})[st];}
+function tile(id,tone,v,sub){const t=$(id);t.dataset.tone=tone;t.querySelector(".v").textContent=v;t.querySelector(".s").textContent=sub;}
+function drawStrip(){const d=D.days[day],seen=D.alarms.filter(a=>a.day<=d);const a=focus!=null&&D.alarms[focus].day<=d?D.alarms[focus]:seen[seen.length-1];
+  for(let i=0;i<8;i++)setStage(i,"wait");
+  const k=a?D.alarms.indexOf(a):-1,age=a?(Date.parse(d)-Date.parse(a.day))/864e5:99,cf=(a&&a.confirm)||{},ac=a&&a.act,dg=a&&a.diag;
+  if(!a||age>12){tile("tState","ok","مراقبة",a?`آخر إنذار #${k+1} في ${bd(a.day)}`:"التوأم والحساسات متفقان");tile("tCause","ok","لا شيء","لا انحراف مستمر");
+    tile("tConf","ok","غير مطلوب","لا شيء لاختباره");tile("tDec","ok","استمر في المراقبة","لا إجراء مطلوب");return;}
+  tile("tState","bad",`إنذار #${k+1}`,`${age<1?"أُطلق اليوم":"أُطلق "+bd(a.day)} عند ${a.node}`);
+  setStage(0,"done");
+  if(age>=1)setStage(1,dg&&dg.single?"bad":"done",dg&&dg.single?"حساس؟":"يشبه التسرب"); else setStage(1,"active");
+  tile("tCause",dg&&dg.single?"warn":"bad",dg&&dg.single?"حساس معطوب؟":(a.kind==="flow"?"تسرب (تدفق ليلي)":"تسرب"),dg?(dg.single?`التغير على ${dg.top} وحده`:`نمط على ${dg.moved} حساسات · فرضية لا إثبات`):"تطابق نمط · فرضية لا إثبات");
+  if(age<1){setStage(2,"active","مخطط");tile("tConf","warn","اختبار مخطط","اختبار الضغط الليلي الليلة");}
+  else if(age<4){setStage(2,"active","يُختبر");tile("tConf","warn","يُختبر","اختبار الضغط الليلي، 3 ليالٍ");}
+  else if(cf.untestable){setStage(2,"skip","غير قابل للاختبار");tile("tConf","info","غير قابل للاختبار هنا","لا يصل أي تحكم بالضغط إلى هذا الموقع");}
+  else if(cf.q==null){setStage(2,"active","مخطط");tile("tConf","warn","اختبار مخطط","لا قراءات اختبار بعد");}
+  else if(cf.ok){setStage(2,"done","مؤكد");tile("tConf","bad","أكده الاختبار",`استجابة تشبه التسرب، ${cf.z} انحرافًا معياريًا`);}
+  else{setStage(2,"bad","لم يتأكد");tile("tConf","warn","لم يتأكد",`${cf.z} انحرافًا معياريًا: أعد الفحص قبل الحفر`);}
+  if(age>=4){setStage(3,"done");setStage(4,"done");}
+  if(age>=5&&ac){setStage(5,"done");if(ac.ver){setStage(6,"done",ac.capped?"محدود":"تم");setStage(7,ac.ver.ok?"done":"bad",ac.ver.ok?"تحقق":"فشل");}else{setStage(6,"skip","لا تحكم");setStage(7,"done","توصية");}
+    const tn={isolate:"bad",pressure:"bad",recheck:"warn",repair:"warn"}[ac.rec],sh={isolate:"اعزل وأصلح",pressure:"اخفض الضغط",recheck:"أعد الفحص، لا تحفر",repair:"جدول الإصلاح"}[ac.rec];
+    tile("tDec",tn,sh,ac.rec==="pressure"&&ac.ver?shortPlan(ac.ver.plan):"المشغّل يعتمد قبل أي إجراء");}
+  else tile("tDec","warn","أكّد السبب",age<4?"انتظر الاختبار الليلي":"جارٍ تقييم الخيارات");}
+function shortPlan(plan){if(!plan||!plan.length)return "لم يتغير أي تحكم";const c=plan[0],m=Math.max(...c.dh.map(Math.round));return c.kind==="prv"?`${c.name} −${m} م`:`مخرج ${c.name} −${m} م (سرعة ${Math.min(...c.speed)}%)`;}
+const mb=m=>`${(+m).toFixed(1)} م (${(m*0.0981).toFixed(2)} بار)`;   // utilities think in bar
+const REC={recheck:"أعد الفحص: لا تحفر بعد",isolate:"اعزل المنطقة وأصلح الآن",pressure:"اخفض الضغط الآن وأصلح قريبًا",repair:"جدول الإصلاح وراقب حتى ذلك الحين"};
+const pct=(a,b)=>b>0?Math.round(100*(1-a/b)):0;
+function dhText(plan){if(!plan||!plan.length)return "لم يتغير أي تحكم";   // per control over the day; pumps both ways (outlet drop and speed)
+  const rng=x=>{const lo=Math.min(...x),hi=Math.max(...x);return lo===hi?`${hi}`:`${lo} إلى ${hi}`;};
+  return plan.map(c=>c.kind==="prv"?`خفض ضبط ${c.name} بمقدار ${rng(c.dh)} م`:`خفض ضغط مخرج ${c.name} بمقدار ${rng(c.dh.map(Math.round))} م (سرعة المضخة ${rng(c.speed)}%)`).join("، ")+"؛ بقية أدوات التحكم دون تغيير";}
+const money=a=>a.prio.cost!=null?` (${a.prio.currency} ${a.prio.cost.toLocaleString("en-GB")})`:"";
+let lastSeen=-1;function toast(){const d=D.days[day],n=D.alarms.filter(a=>a.day<=d).length;
+  if(playing&&story==null&&n>lastSeen&&lastSeen>=0){   // story mode explains alarms in its captions insteadconst a=D.alarms[n-1];$("toast").innerHTML=`<b>إنذار #${n}</b> · ${bd(a.day)}<br>${LABEL[a.kind]||a.kind} قرب ${a.node}، حوالي ${a.size} م³/ساعة. جارٍ اختبار الضغط الليلي…`;
+    $("toast").classList.add("show");clearTimeout(window._tt);window._tt=setTimeout(()=>$("toast").classList.remove("show"),2600);}lastSeen=n;}
+function recLine(A){const c=r=>A.filter(a=>a.act&&a.act.rec===r).length,pv=A.filter(a=>a.act&&a.act.ver&&a.act.ver.ok);if(!pv.length)return "";
+  return `<p class="sub">توصيات حارس الشبكة خلال السنة: ${c("isolate")} اعزل وأصلح الآن، ${c("pressure")} اخفض الضغط حتى الإصلاح، ${c("repair")} جدول الإصلاح، ${c("recheck")} أعد الفحص قبل الحفر. اجتازت خطط الضغط فحص النموذج الثاني في ${pv.length} إنذارًا، وخفّضت تسرباتها بمتوسط ${pct(pv.reduce((s,a)=>s+a.act.ver.m3day,0),pv.reduce((s,a)=>s+a.act.ver.m3day0,0))}% مع بقاء كل تقاطع فوق 16 م في النموذجين (15 م زائد هامش أمان 1 م).</p>`;}
+function summary(){const A=D.alarms,near=A.filter(a=>a.hit),wrong=A.filter(a=>!a.hit),conf=x=>x.filter(a=>(a.confirm||{}).ok).length;
+  const loss=A.reduce((s,a)=>s+a.prio.m3day,0);
+  $("dcard").innerHTML=`<h2 style="margin:0 0 6px">سنة واحدة: ${D.name}</h2><div class="sub">تشغيل واحد دون أي ضبط على هذه السنة؛ والتسربات الحقيقية مخفية عن حارس الشبكة.</div>
+  <div class="sumgrid"><div><div class="big">${A.length}</div>إنذارًا أُطلق</div><div><div class="big">${near.length}</div>ضمن 300 م من تسرب حقيقي</div>
+  <div><div class="big">${conf(near)} / ${near.length}</div>منها أكدها اختبار الضغط الليلي</div><div><div class="big">${wrong.filter(a=>(a.confirm||{}).z!=null&&!a.confirm.ok).length} / ${wrong.length}</div>إنذارات في مكان خاطئ كشفها الاختبار قبل الحفر</div></div>${recLine(A)}
+  <p class="sub">اضغط على إنذار لمراحله الثماني، أو اضغط <b>وضع القصة</b>.</p>
+  <button class="primary" id="again">شاهد مرة أخرى</button> <button id="dclose">إغلاق</button>`;
+  $("detail").style.display="flex";$("dclose").onclick=()=>$("detail").style.display="none";$("again").onclick=()=>{$("detail").style.display="none";day=0;lastSeen=-1;$("play").click();};}
+// ---------- stages 6-8 (engine/act.py, development tool; numbers from site/export_actions.py) ----------
+function curveSvg(c,plan){if(!c)return "";const P=c.points,W=520,H=170,L=40,R=44,T=14,B=26,n=P.length-1;
+  const pmax=Math.max(...P.map(p=>p.pmin))+2,pmn=Math.min(c.limit-3,...P.map(p=>p.pmin)),lmax=Math.max(...P.map(p=>p.m3day))||1;
+  const X=k=>L+(W-L-R)*k/Math.max(n,1),YP=v=>H-B-(v-pmn)/(pmax-pmn)*(H-T-B),YL=v=>H-B-v/lmax*(H-T-B),path=f=>P.map((p,i)=>(i?"L":"M")+X(p.step).toFixed(1)+" "+f(p).toFixed(1)).join(" ");
+  const unit=c.kinds.every(k=>k==="prv")?"م":(c.kinds.every(k=>k==="pump")?"خطوات من 2% من سرعة المضخة":"خطوات");
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;margin-top:6px" role="img" aria-label="منحنى التحسين">
+  <rect x="${L}" y="${YP(c.limit)}" width="${W-L-R}" height="${H-B-YP(c.limit)}" fill="${css("--alarm")}" fill-opacity=".08"/>
+  <line x1="${L}" x2="${W-R}" y1="${YP(c.limit)}" y2="${YP(c.limit)}" stroke="${css("--alarm")}" stroke-dasharray="4 3"/>
+  <text x="${W-R-2}" y="${YP(c.limit)+12}" text-anchor="end" font-size="10" fill="${css("--alarm")}">خط الأمان ${mb(c.limit)}</text>
+  <path d="${path(p=>YP(p.pmin))}" fill="none" stroke="${css("--accent")}" stroke-width="2"/><path d="${path(p=>YL(p.m3day))}" fill="none" stroke="${css("--miss")}" stroke-width="2" stroke-dasharray="5 3"/>
+  ${[0,Math.round(n/2),n].map(k=>`<text x="${X(k)}" y="${H-8}" text-anchor="middle" font-size="10" fill="${css("--muted")}">${k}</text>`).join("")}
+  <text x="${L}" y="${T-2}" font-size="10" fill="${css("--accent")}">— أقل ضغط في أي مكان (م)</text><text x="${W-R}" y="${T-2}" text-anchor="end" font-size="10" fill="${css("--miss")}">- - فاقد التسرب (م³/يوم)</text>
+  ${[pmn,pmax].map(v=>`<text x="${L-4}" y="${YP(v)+3}" text-anchor="end" font-size="10" fill="${css("--muted")}">${v.toFixed(0)}</text>`).join("")}
+  ${[0,lmax].map(v=>`<text x="${W-R+4}" y="${YL(v)+3}" font-size="10" fill="${css("--muted")}">${Math.round(v)}</text>`).join("")}
+  <text x="${(L+W-R)/2}" y="${H-8+0}" text-anchor="middle" font-size="10" fill="${css("--muted")}" dy="0"></text></svg>
+  <div class="sub" style="font-size:11.5px">المحور الأفقي: خفض ${c.controls.join(" و")} معًا، بوحدة ${unit}. الخطة أعلاه أفضل من هذا الخط المستقيم: لكل صمام أو مضخة ولكل فترة 3 ساعات ضبطها الخاص.</div>`;}
+function actStages(a,showT){const ac=a.act,g=css("--hit"),o=css("--miss"),b=css("--accent"),m=css("--muted");
+  if(!ac)return st(6,m,"مقارنة الخيارات","لم تُحسب لهذا الإنذار.");
+  const v=ac.ver,i=ac.iso,c0=ac.curve&&ac.curve.points[0],untest=(a.confirm||{}).untestable;
+  let h=st(6,b,"مقارنة الإجراءات · الساعات 24 القادمة",`<table class="ws"><tr><th>الإجراء</th><th>الماء المفقود</th><th>أقل ضغط</th><th>انقطاع الإمداد</th></tr>
+    <tr${ac.rec==="isolate"?" class='pick'":""}><td>أ · اعزل منطقة 300 م</td><td>≈ 0 م³<br><span style="font-size:10.5px">إذا كان التسرب داخلها (8 من 10)</span></td><td>–</td><td>${i.m3day} م³ · ${i.junctions} تقاطعًا${i.outside?` (${i.outside} خارجها)`:""}</td></tr>
+    <tr${ac.rec==="pressure"?" class='pick'":""}><td>ب · اخفض الضغط${v?" (متحقق منه)":""}</td><td>${v?`${v.m3day} م³ (−${pct(v.m3day,v.m3day0)}%)`:"غير ممكن هنا"}</td><td>${v?mb(v.pmin):"–"}</td><td>0 م³</td></tr>
+    <tr${ac.rec==="repair"||ac.rec==="recheck"?" class='pick'":""}><td>ج · راقب وأرسل فريقًا</td><td>${ac.monitor} م³${a.prio.cost!=null?`<br><span style="font-size:10.5px">${a.prio.currency} ${a.prio.cost.toLocaleString("en-GB")}</span>`:""}</td><td>${c0?mb(c0.pmin):"–"}</td><td>0 م³</td></tr></table>`);
+  h+=st(7,v?b:m,"التحسين: أقل ضغط آمن",v?`خطة التوأم كل 3 ساعات، وكل تقاطع على الأقل ${mb(ac.pmin+1)} (مستوى الخدمة ${ac.pmin} م + هامش أمان 1 م): ${dhText(ac.twin.plan)}. التسرب حوالي ${ac.twin.m3day0} ← ${ac.twin.m3day} م³/يوم.`+(ac.capped?` <b style="display:inline">أوقفه حد شركة المياه</b> (خفض ${ac.cap.m} م على الأكثر، والمضخات بسرعة ${Math.round(100*ac.cap.min_speed)}% على الأقل): هامش لأخطاء النموذج وتدفق الحريق والمشتركين.`:"")+curveSvg(ac.curve):"لا يغيّر أي ضبط صمام أو مضخة الضغطَ في هذا الموقع، فلا شيء لتحسينه.");
+  let vt="";if(v&&v.tries_log)vt=`<table class="ws"><tr><th>المحاولة</th><th>الفائض فوق ${ac.pmin+1} م</th><th>التسرب (م³/يوم)</th><th>النتيجة</th></tr>`+v.tries_log.map(t=>`<tr><td>${t.t===1?"خطة التوأم":`تراجع ${t.t-1}×2 خطوة`}</td><td>${t.margin>=0?"+":""}${t.margin} م</td><td>${Math.round(t.m3day)}</td><td>${t.ok?'<span class="pill ok">نجح</span>':'<span class="pill bad">فشل</span>'}</td></tr>`).join("")+`</table>`;
+  h+=st(8,v?(v.ok?g:o):b,"التحقق على نموذج ثانٍ",(v?`محاكاة 24 ساعة معتمدة على الضغط بأنماط الاستهلاك الخاصة بالنموذج وخزانات متحركة (التوأم يستخدم لقطات مقاسة).${vt}النهائي: ${dhText(v.plan)}؛ يحصل المشتركون على ${(100*Math.min(1,v.served)).toFixed(1)}% من مائهم.`:"لا شيء للتحقق منه.")+
+    (showT&&ac.real?` <span style="color:${css("--truth")}">مفتاح الإجابة (الشبكة الحقيقية، مخفية عن حارس الشبكة): الخطة ${ac.real.ok?"تبقي كل تقاطع فوق الحد":`تنقص عن الحد بمقدار ${Math.abs(ac.real.margin)} م في مكان ما`}؛ كل التسربات الحقيقية معًا ستفقد ${ac.real.m3day} بدلًا من ${ac.real.m3day0} م³/يوم (−${pct(ac.real.m3day,ac.real.m3day0)}%).</span>`:""));
+  const why={isolate:`عزل المنطقة يقطع ماءً (${i.m3day} م³/يوم) أقل مما يفقده التسرب (${ac.monitor} م³/يوم).`,pressure:v?`الخطة المتحقق منها تخفض التسرب ${pct(v.m3day,v.m3day0)}% دون أن ينزل أحد تحت ${mb(ac.pmin)}، بينما يحدد الفريق مكان التسرب (مسح صوتي) ويصلحه.`:"",
+    recheck:"لم يُظهر اختبار الضغط الليلي استجابة تشبه التسرب هنا. أعد الاختبار أو افحص الحساسات قبل أن يحفر أحد.",repair:"لا يفيد أي تغيير آمن في الضغط في هذا الموقع؛ أرسل فريقًا لمسح المنطقة وخطط للإصلاح."}[ac.rec]||"";
+  h+=`<div class="reccard"><div class="grp" style="margin:0">التوصية</div><div class="big">${REC[ac.rec]}${untest&&ac.rec!=="recheck"?" (امسح أولًا: لا اختبار ليلي ممكن هنا)":""}</div><div class="sub">${why}</div></div>`;
+  return h;}
+// ---------- the 8 stages for one alarm ----------
+function st(n,col,title,text){return `<div class="stage"><div class="n" style="background:${col}">${n}</div><div><b>${title}</b><span>${text}</span></div></div>`;}
+function openAlarm(k){const a=D.alarms[k],g=css("--hit"),o=css("--miss"),b=css("--accent"),m=css("--muted"),showT=$("truth").checked;playing=false;$("play").textContent="تشغيل";
+  const dg=a.diag,cf=a.confirm||{};
+  let h=`<h2 style="margin:0 0 4px;font-size:20px">إنذار #${k+1} · ${bd(a.day)}</h2><div class="sub">${LABEL[a.kind]||a.kind} عند التقاطع ${a.node}، المنطقة ${a.zone??"?"}</div>`;
+  h+=`<div class="grp">الكشف</div>`+st(1,b,"الكشف",`استمر الاختلاف بين ضغوط التوأم المتوقعة والضغوط المقاسة بنمط يشبه التسرب، ليلتين أو أكثر. الحجم المقدّر حوالي ${a.size} م³/ساعة.`);
+  h+=st(2,dg?(dg.single?o:g):m,"التشخيص",dg?(dg.single?`التغير يتركز على حساس واحد (${dg.top}). افحص هذا الحساس قبل إرسال فريق.`:`التغير ينتشر على ${dg.moved} حساسات كما يفعل التسرب، لا على حساس معطوب واحد.`)+(dg.dflow!=null?` تغيّر تدفق المنطقة الليلي بمقدار ${dg.dflow>0?"+":""}${dg.dflow} م³/ساعة في الأسبوع نفسه.`:""):"مبكر جدًا في السنة لمقارنة أسبوعين.");
+  h+=`<div class="grp">الإثبات</div>`+st(3,cf.untestable?m:(cf.ok?g:o),"تأكيد السبب (اختبار الضغط الليلي)",cf.untestable?"لا يغيّر أي ضبط صمام أو مضخة الضغطَ في هذا الموقع، فلا يمكن إجراء الاختبار هنا.":(cf.q==null?`اختبار مخطط: خفض ${(cf.controls||[]).join("، ")} بنبضات 15 دقيقة ليلًا (حوالي ${cf.drop_here} م أقل هنا)؛ لا قراءات اختبار بعد.`:(cf.ok?`مؤكد. خُفّض ${(cf.controls||[]).join("، ")} بنبضات 15 دقيقة (حوالي ${cf.drop_here} م أقل هنا) من ${bd(cf.nights[0])} إلى ${bd(cf.nights[2])}: استجابت الشبكة كتسرب حساس للضغط (حوالي ${cf.q} م³/ساعة، ${cf.z} انحرافًا معياريًا فوق الضوضاء).`:`لم يتأكد. لم يُظهر اختبار النبضات من ${bd(cf.nights[0])} إلى ${bd(cf.nights[2])} استجابة تشبه التسرب هنا (${cf.z} انحرافًا معياريًا). أعد الفحص قبل الحفر.`)));
+  h+=st(4,b,"التحديد",`التقاطع الأرجح ${a.node}؛ منطقة البحث: كل الأنابيب ضمن 300 م.`+(a.cloud?` تشير الأدلة إلى ${a.cloud.length} تقاطعًا تحمل 80% من الأدلة (${a.cloud.length<=15?"ضيقة: ثقة عالية":a.cloud.length<=60?"متوسطة":"واسعة: غير مؤكدة، وسّع المسح"}).`:"")+(showT?(a.hit?` <b style="display:inline;color:${g}">التسرب الحقيقي ${a.near} كان على بعد ${a.dist} م.</b>`:` <b style="display:inline;color:${o}">لا تسرب حقيقي ضمن 300 م.</b>`):""));
+  h+=st(5,b,"الأولوية",`حوالي ${a.prio.m3day} م³ تُفقد يوميًا`+(a.prio.cost!=null?`، حوالي ${a.prio.cost.toLocaleString("en-GB")} ${a.prio.currency} يوميًا بسعر الماء في المدينة.`:"."));
+  h+=`<div class="grp">التصرف</div>`+actStages(a,showT);
+  h+=`<p class="sub" style="margin-top:12px">المراحل 2 و3 و5–8 أدوات تطوير، وليست نتائج مختبرة.</p><button id="dclose" style="margin-top:6px">إغلاق</button>`;
+  $("dcard").innerHTML=h;$("detail").style.display="flex";$("dclose").onclick=()=>$("detail").style.display="none";}
+$("detail").onclick=e=>{if(e.target.id==="detail")$("detail").style.display="none";};
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){$("detail").style.display="none";return;}
+  if(e.target.closest("input,select,button")&&e.key!==" ")return;if($("detail").style.display==="flex")return;   // presenter keys: space play/pause, arrows step, s story, t truth
+  if(e.key===" "){e.preventDefault();const g=$("story").style.display==="block"&&$("sGo");(g||$("play")).click();}
+  else if(e.key==="ArrowRight"||e.key==="ArrowLeft"){day=Math.max(0,Math.min(N-1,day+(e.key==="ArrowRight"?1:-1)*(e.shiftKey?7:1)));draw();}
+  else if(e.key==="s")startStory();else if(e.key==="t"){$("truth").checked=!$("truth").checked;$("truth").onchange();}});
+$("log").onclick=e=>{const ev=e.target.closest(".ev[data-k]");if(ev)openAlarm(+ev.dataset.k);};
+$("map").onclick=e=>{const r=$("map").getBoundingClientRect(),{p}=proj($("map").clientWidth,parseFloat($("map").style.height));const d=D.days[day];let best=null;
+  D.alarms.forEach((a,k)=>{if(a.day>d)return;const [x,y]=p(...a.xy),dd=Math.hypot(x-(e.clientX-r.left),y-(e.clientY-r.top));if(dd<14&&(!best||dd<best[0]))best=[dd,k];});if(best){openAlarm(best[1]);return;}
+  $("map").onmousemove(e);clearTimeout(window._tp);window._tp=setTimeout(()=>tipAt(null,null),2500);};
+// ---------- story mode: plays the year and stops at key moments (numbers read from the data) ----------
+const fmtD=s=>new Date(s).toLocaleDateString("ar-u-nu-latn",{day:"numeric",month:"short"}), sar=n=>n.toLocaleString("en-GB");
+const TRUTH=Object.fromEntries(D.truth.map(t=>[t.pipe,t]));
+const plusDays=(s,n)=>new Date(Date.parse(s)+n*864e5).toISOString().slice(0,10);
+const YEAR={near:D.alarms.filter(a=>a.hit).length,nearOk:D.alarms.filter(a=>a.hit&&(a.confirm||{}).ok).length,
+  wrong:D.alarms.filter(a=>!a.hit).length,wrongOk:D.alarms.filter(a=>!a.hit&&(a.confirm||{}).ok).length};
+const MOMENTS=[   // alarm number (1-based) and how many days after it to stop, so the night test result is in
+  {n:2,lag:4,title:"انفجار يُكتشف خلال يومين",text:(a,cf,t)=>`في <b>${fmtD(t.start)}</b> يبدأ الأنبوب ${a.near} بالتسرب، وسرعان ما يصل إلى حوالي ${Math.round(t.max)} م³/ساعة. في <b>${fmtD(a.day)}</b> تنخفض ${a.diag.moved} حساسات معًا فيُطلق حارس الشبكة الإنذار #2. يستجيب اختبار الضغط الليلي (${fmtD(cf.nights[0])}–${fmtD(cf.nights[2])}) كتسرب حقيقي. موقع حارس الشبكة على بعد <b>${a.dist} م</b> من التسرب الحقيقي. لو تُرك لفقد حوالي ${sar(a.prio.m3day)} م³ يوميًا ${money(a)}.`},
+  {n:12,lag:4,title:"تسرب صيفي كبير يُحدد بدقة",text:(a,cf,t)=>`يبدأ الأنبوب ${a.near} بالتسرب في <b>${fmtD(t.start)}</b> ويكبر حتى حوالي ${Math.round(t.max)} م³/ساعة. يُطلق حارس الشبكة الإنذار #12 في <b>${fmtD(a.day)}</b> ويؤكده الاختبار الليلي (${cf.z} انحرافًا معياريًا فوق الضوضاء). التسرب الحقيقي على بعد <b>${a.dist} م</b>: داخل منطقة البحث 300 م. الأولوية: حوالي ${sar(a.prio.cost)} ${a.prio.currency} من المياه المحلاة يوميًا.`},
+  {n:23,lag:4,title:"إنذار خاطئ يُكشف قبل الحفر",text:(a,cf,t)=>`ليس كل إنذار صحيحًا. يشير الإنذار #23 إلى التقاطع ${a.node}، لكن لا تسرب حقيقي ضمن 300 م (الأقرب، ${a.near}، بدأ ذلك اليوم على بعد ${a.dist} م). لا يجد اختبار الضغط الليلي <b>أي استجابة تشبه التسرب</b> (${cf.z} انحرافًا معياريًا)، فينصح حارس الشبكة: أعد الفحص ولا ترسل فريقًا بعد. لهذا يثبت حارس الشبكة السبب قبل الحفر.`},
+  {n:25,lag:4,title:"بعد عشرة أيام: وُجد",text:(a,cf,t)=>`مع استمرار تسرب ${a.near} يتضح النمط. الإنذار #25 في <b>${fmtD(a.day)}</b> يضعه على بعد <b>${a.dist} م</b> من التسرب الحقيقي، وهذه المرة يؤكده الاختبار الليلي. خلال السنة كلها أكد الاختبار ${YEAR.nearOk} من ${YEAR.near} إنذارًا قرب تسربات حقيقية، و${YEAR.wrongOk} فقط من ${YEAR.wrong} إنذارًا في مكان خاطئ.`}];
+if(D.story_auto){   // other towns: pick the moments from the data
+  const A=D.alarms.map((a,k)=>({...a,k})),pick=[],used=new Set(),add=(a,title,text)=>{if(a&&!used.has(a.k)){used.add(a.k);pick.push({n:a.k+1,lag:4,title,text});}};
+  const hits=A.filter(a=>a.hit);
+  add(hits.find(a=>(a.confirm||{}).ok)||hits[0],"تسرب حقيقي يُكتشف",(a,cf,t)=>`يبدأ الأنبوب ${a.near} بالتسرب في <b>${fmtD(t.start)}</b> (حتى ${t.max} م³/ساعة). يُطلق حارس الشبكة الإنذار #${D.alarms.indexOf(a)+1} في <b>${fmtD(a.day)}</b>؛ أفضل موقع له على بعد <b>${a.dist} م</b> من التسرب الحقيقي.`+(cf.ok?` يؤكده اختبار الضغط الليلي.`:cf.q!=null?` لا يؤكده اختبار الضغط الليلي (${cf.z} انحرافًا معياريًا): التسربات الصغيرة يصعب إثباتها.`:""));
+  add(hits.slice().sort((x,y)=>y.prio.m3day-x.prio.m3day)[0],"التسرب الأعلى كلفة",(a,cf,t)=>`الإنذار #${D.alarms.indexOf(a)+1}: حوالي ${a.prio.m3day} م³ تُفقد يوميًا. التسرب الحقيقي (${a.near}) على بعد ${a.dist} م من موقع حارس الشبكة.`);
+  const wr=A.filter(a=>!a.hit); add(wr.find(a=>(a.confirm||{}).q!=null&&!a.confirm.ok)||wr[0],"ليس كل إنذار صحيحًا",(a,cf,t)=>`يشير الإنذار #${D.alarms.indexOf(a)+1} إلى ${a.node}، لكن لا تسرب حقيقي ضمن 300 م.`+(cf.q!=null&&!cf.ok?` لا يجد الاختبار الليلي استجابة تشبه التسرب.`:""));
+  add(A.find(a=>a.act&&a.act.ver&&a.act.ver.ok&&a.hit&&!used.has(a.k)),"ماذا نفعل حياله",(a,cf,t)=>`للإنذار #${D.alarms.indexOf(a)+1} يحسب حارس الشبكة أقل ضغط آمن: ${dhText(a.act.ver.plan)}. بعد التحقق على نموذج ثانٍ يفقد التسرب حوالي ${a.act.ver.m3day} بدلًا من ${a.act.ver.m3day0} م³ يوميًا.`);
+  pick.sort((x,y)=>x.n-y.n); MOMENTS.length=0; MOMENTS.push(...pick);
+}
+MOMENTS.forEach(m=>{m.k=m.n-1;m.at=D.days.indexOf(plusDays(D.alarms[m.k].day,m.lag));});
+function showStory(html){$("story").innerHTML=html;$("story").style.display="block";if(innerWidth<=700)$("story").scrollIntoView({block:"nearest",behavior:"smooth"});}
+function hideStory(){$("story").style.display="none";}
+function storyIntro(){placeStory([X1,Y0]);showStory(`<div class="step">وضع القصة · ${MOMENTS.length} محطات</div><h3>سنة في مدينة فيها تسربات مخفية</h3>
+  <p>يرى حارس الشبكة فقط ${D.sensors.length} حساس ضغط وعدادات المناطق. <b>المعينات البنفسجية</b> هي التسربات الحقيقية المخفية عن حارس الشبكة.</p>
+  <div class="row"><button class="primary" id="sGo">ابدأ</button><button id="sEnd">اخرج من القصة</button></div>`);
+  $("sGo").onclick=()=>{hideStory();go();};$("sEnd").onclick=endStory;}
+function placeStory(xy){const st=$("story").style,cv=$("map"),{p}=proj(cv.clientWidth,parseFloat(cv.style.height)),[x,y]=p(...xy);   // corner away from the alarm
+  const right=x<cv.clientWidth/2,top=y>parseFloat(cv.style.height)/2;st.left=right?"auto":"12px";st.right=right?"12px":"auto";st.top=top?"12px":"auto";st.bottom=top?"auto":"12px";}
+function storyStop(i){const m=MOMENTS[i],a=D.alarms[m.k];focus=m.k;draw();placeStory(a.xy);
+  showStory(`<div class="step">المحطة ${i+1} من ${MOMENTS.length} · ${fmtD(D.days[day])}</div><h3>${m.title}</h3><p>${m.text(a,a.confirm||{},TRUTH[a.near]||{})}${a.act?` <b>توصية حارس الشبكة: ${REC[a.act.rec]}.</b>`:""}</p>
+  <div class="row"><button class="primary" id="sGo">${i+1<MOMENTS.length?"تابع":"شغّل حتى النهاية"}</button><button id="sOpen">مراحله الثماني</button><button id="sEnd">اخرج من القصة</button></div>`);
+  $("sGo").onclick=()=>{hideStory();focus=null;story=i+1;go();};$("sOpen").onclick=()=>openAlarm(m.k);$("sEnd").onclick=endStory;}
+function startStory(){story=0;focus=null;day=0;lastSeen=-1;playing=false;$("play").textContent="تشغيل";$("truth").checked=true;$("log")._h=null;$("speed").value="7";draw();storyIntro();}
+function endStory(){story=null;focus=null;hideStory();draw();}
+// ---------- playback ----------
+function go(){playing=true;$("play").textContent="إيقاف مؤقت";last=performance.now();acc=0;requestAnimationFrame(tick);}
+function tick(t){if(!playing)return;const dt=(t-last)/1000;last=t;acc+=dt*(+$("speed").value);
+  const stop=story!=null&&story<MOMENTS.length?MOMENTS[story].at:-1;
+  while(acc>=1&&day<N-1){day++;acc-=1;if(day===stop)break;}draw();
+  if(day===stop){playing=false;$("play").textContent="تشغيل";storyStop(story);return;}
+  if(day>=N-1){playing=false;$("play").textContent="إعادة";story=null;summary();return;}requestAnimationFrame(tick);}
+$("play").onclick=()=>{if(day>=N-1){day=0;}hideStory();if(story!=null&&!playing)focus=null;playing=!playing;$("play").textContent=playing?"إيقاف مؤقت":"تشغيل";if(playing){last=performance.now();acc=0;requestAnimationFrame(tick);}};
+$("storyBtn").onclick=startStory;
+// ---------- how to read this ----------
+function help(){playing=false;$("play").textContent="تشغيل";const sw=(st,inner)=>`<div class="sym"><svg width="22" height="22" viewBox="0 0 22 22" style="${st}">${inner}</svg></div>`;
+  $("dcard").innerHTML=`<h2 style="margin:0 0 4px;font-size:20px">كيف تقرأ الصفحة</h2><div class="sub">سنة واحدة من ${D.name} تُعاد يومًا بيوم. يرى حارس الشبكة الحساسات فقط ولا يرى التسربات الحقيقية أبدًا.</div>
+  <div class="grp">الخريطة</div><div class="howgrid">
+  ${sw("",`<line x1="2" y1="11" x2="20" y2="11" stroke="${css("--pipe")}" stroke-width="2"/>`)}<div><b>الخطوط الرمادية</b>: أنابيب المياه (حوالي ${D.pipes.length}). مقياس الرسم أسفل الخريطة.</div>
+  ${sw("",`<circle cx="11" cy="11" r="5" fill="${css("--muted")}" opacity=".6"/>`)}<div><b>النقاط الصغيرة</b>: حساسات الضغط الـ ${D.sensors.length}. الرمادي يعني طبيعي.</div>
+  ${sw("",`<circle cx="7" cy="11" r="5" fill="${css("--drop")}"/><circle cx="16" cy="11" r="5" fill="${css("--rise")}"/>`)}<div><b>حساس أحمر / أزرق</b>: انخفض / ارتفع ضغطه هذا الأسبوع أكثر من تذبذبه الأسبوعي المعتاد. التسرب يخفض الضغوط القريبة.</div>
+  ${sw("",`<circle cx="11" cy="11" r="8" fill="${css("--alarm")}"/><text x="11" y="14.5" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">3</text>`)}<div><b>نقطة مرقمة</b>: إنذار، أفضل تقدير لحارس الشبكة لمكان التسرب. مرّر الفأرة فوقها أو اضغطها.</div>
+  ${sw("",`<circle cx="11" cy="11" r="9" fill="none" stroke="${css("--alarm")}" stroke-width="1.5"/>`)}<div><b>الدائرة</b>: منطقة البحث 300 م التي يمسحها الفريق بالأجهزة الصوتية.</div>
+  ${sw("",`<circle cx="7" cy="9" r="4" fill="${css("--alarm")}" opacity=".6"/><circle cx="14" cy="13" r="5" fill="${css("--alarm")}" opacity=".35"/>`)}<div><b>السحابة الحمراء</b>: حيث تشير الأدلة (80% منها). الضيقة = ثقة عالية، والواسعة = وسّع المسح.</div>
+  ${sw("",`<path d="M11 3 L19 11 L11 19 L3 11 Z" fill="${css("--truth")}"/>`)}<div><b>المعين البنفسجي</b> (فقط مع "إظهار التسربات الحقيقية"): تسرب حقيقي مخفي عن حارس الشبكة. الإنذار الأخضر = ضمن 300 م منه، والبرتقالي = مكان خاطئ؛ والخط المتقطع يعطي المسافة.</div></div>
+  <div class="grp">الرسوم البيانية</div><div class="howgrid">
+  ${sw("",`<rect x="2" y="7" width="18" height="8" fill="${css("--accent")}" opacity=".3"/><line x1="2" y1="11" x2="20" y2="11" stroke="${css("--accent")}" stroke-width="2"/>`)}<div><b>الأول</b>: الضغط المقاس ناقص ما توقعه التوأم الرقمي، بالسنتيمتر. قرب الصفر = الشبكة تتصرف كما يتوقع التوأم. التسرب يدفعه تحت الصفر.</div>
+  ${sw("",`<polyline points="2,15 9,14 13,8 20,7" fill="none" stroke="${css("--miss")}" stroke-width="2"/>`)}<div><b>الثاني</b>: الموازنة الليلية، كم يزيد ما تستخدمه كل منطقة ليلًا (حين ينام الجميع تقريبًا) عن معتادها. الارتفاع الثابت يعني تسربًا.</div>
+  ${sw("",`<line x1="11" y1="2" x2="11" y2="20" stroke="${css("--alarm")}" stroke-width="1.5" opacity=".6"/>`)}<div><b>الخطوط الحمراء الرفيعة</b>: أيام إطلاق الإنذارات. مرّر الفأرة على الرسم للأرقام الدقيقة.</div></div>
+  <div class="grp">البطاقات والمراحل</div><p class="sub" style="margin:6px 0">البطاقات الأربع تقول ما يحدث الآن (الحالة، السبب المرجح، هل ثبت السبب، القرار). وقائمة المراحل بجانب الخريطة تُظهر كل إنذار يمر بمراحل حارس الشبكة الثماني: الكشف، التشخيص، التأكيد باختبار الضغط الليلي، التحديد، الأولوية؛ ثم مقارنة الخيارات، وإيجاد أقل ضغط آمن، والتحقق على نموذج ثانٍ.</p>
+  <p class="sub" style="margin:6px 0">تعرض أمام جمهور؟ المفاتيح: <b>المسافة</b> تشغيل / إيقاف / متابعة، <b>← →</b> يوم واحد (مع shift: أسبوع)، <b>s</b> وضع القصة، <b>t</b> إظهار التسربات الحقيقية.</p>
+  <button class="primary" id="hStory">ابدأ وضع القصة</button> <button id="dclose">إغلاق</button>`;
+  $("detail").style.display="flex";$("dclose").onclick=()=>$("detail").style.display="none";$("hStory").onclick=()=>{$("detail").style.display="none";startStory();};}
+$("helpBtn").onclick=help;
+try{if(!localStorage.getItem("wg_help_seen")){localStorage.setItem("wg_help_seen","1");setTimeout(help,300);}}catch(e){}
+// ---------- hover labels ----------
+function tipAt(e,html){const t=$("tip");if(!html){t.style.display="none";return;}t.innerHTML=html;t.style.display="block";
+  const r=t.getBoundingClientRect();let x=e.clientX+14,y=e.clientY+14;if(x+r.width>innerWidth-8)x=e.clientX-r.width-14;if(y+r.height>innerHeight-8)y=e.clientY-r.height-14;t.style.left=x+"px";t.style.top=y+"px";}
+$("map").onmousemove=e=>{const cv=$("map"),r=cv.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top,{p}=proj(cv.clientWidth,parseFloat(cv.style.height)),d=D.days[day];
+  let best=null;const near=(xy,lim,html)=>{const [x,y]=p(...xy),dd=Math.hypot(x-mx,y-my);if(dd<lim&&(!best||dd<best[0]))best=[dd,html];};
+  D.alarms.forEach((a,k)=>{if(a.day<=d)near(a.xy,12,`<b>إنذار #${k+1}</b> · ${bd(a.day)}<br>${LABEL[a.kind]||a.kind} عند ${a.node}، حوالي ${a.size} م³/ساعة`+($("truth").checked?(a.hit?`<br>✓ تسرب حقيقي على بعد ${a.dist} م`:`<br>✗ لا تسرب حقيقي ضمن 300 م`):"")+`<br><i>اضغط لمراحله الثماني</i>`);});
+  D.sxy.forEach((q,i)=>{const z=D.chg[day][i];near(q,9,`<b>الحساس ${D.sensors[i]}</b><br>`+(Math.abs(z)<3.5?"طبيعي هذا الأسبوع":(z<0?"انخفض الضغط":"ارتفع الضغط")+` هذا الأسبوع (${Math.abs(z).toFixed(1)}× تذبذبه المعتاد)`)+`<br>مقابل التوأم اليوم: ${D.res[day][i]==null?"–":D.res[day][i].toFixed(1)+" سم"}`);});
+  if($("truth").checked)D.truth.forEach(t=>{if(t.start<=d&&d<=t.end)near(t.xy,10,`<b>تسرب حقيقي ${t.pipe}</b> (مخفي عن حارس الشبكة)<br>${bd(t.start)} إلى ${bd(t.end)}، حتى ${t.max} م³/ساعة`);});
+  cv.style.cursor=best&&best[1].includes("إنذار")?"pointer":"default";tipAt(e,best&&best[1]);};
+function chartHover(id,f){$(id).onmousemove=e=>{const cv=$(id),r=cv.getBoundingClientRect(),i=Math.round((e.clientX-r.left-36)/(cv.clientWidth-44)*(N-1));
+  if(i<0||i>day){tipAt(e,null);return;}const al=D.alarms.map((a,k)=>[a,k]).filter(([a])=>a.day===D.days[i]);
+  tipAt(e,`<b>${new Date(D.days[i]).toLocaleDateString("ar-u-nu-latn",{day:"numeric",month:"short"})}</b><br>`+f(i)+al.map(([a,k])=>`<br>إنذار #${k+1} (${LABEL[a.kind]||a.kind})`).join(""));};$(id).onmouseleave=()=>tipAt(null,null);}
+chartHover("cRes",i=>`الحساس النموذجي ${BAND.med[i]==null?"–":BAND.med[i].toFixed(1)} سم مقابل التوأم<br>النصف الأوسط: ${BAND.q1[i]?.toFixed(1)} إلى ${BAND.q3[i]?.toFixed(1)} سم`);
+chartHover("cFlow",i=>D.zones.map((z,k)=>`${(ZNAME[z]||z).split(" (")[0]}: ${flowSeries[k][i]==null?"–":(flowSeries[k][i]>0?"+":"")+flowSeries[k][i].toFixed(1)+" م³/ساعة"}`).join("<br>"));
+$("map").onmouseleave=()=>tipAt(null,null);
+$("day").oninput=e=>{if(story!=null)endStory();day=+e.target.value;draw();};$("truth").onchange=()=>{$("log")._h=null;draw();};
+window.addEventListener("resize",draw);matchMedia("(prefers-color-scheme: dark)").addEventListener("change",draw);
+D.name=/^L-Town/.test(D.name)?"إل-تاون 2019 (BattLeDIM)":/^Waikuku/.test(D.name)?"وايكوكو بيتش · سنة محاكاة (سيناريو تطوير "+(D.name.match(/[0-9]+(?=[)]?$)/)||[""])[0]+")":D.name;
+$("sub").textContent=D.name+" · توأم رقمي + موازنة ليلية";if(D.credit)$("credit").textContent=D.credit_ar||"تشغيل واحد لحارس الشبكة على سنة محاكاة؛ بيانات الشبكة من مصادر عامة (انظر النسخة الإنجليزية للمراجع).";draw();
+if(location.hash==="#story")setTimeout(()=>{$("detail").style.display="none";startStory();},450);   // link straight into the guided story
+</script></body></html>
