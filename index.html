@@ -17,10 +17,10 @@ td,th{border-bottom:1px solid var(--line);padding:6px;text-align:left} .wrap{ove
 <p class="lead">A digital twin of a water network that detects leaks early, points crews to a 300 m search area and proves the
 cause with a night pressure test before anyone digs. Advisory: an operator approves every action.</p>
 <a class="btn" href="replay.html">Watch one year live</a><a class="btn ghost" href="replay.html#story">Start the guided story</a><a class="btn ghost" href="replay_ar.html" lang="ar">العربية</a>
-<div class="cards"><div class="card"><b>72%</b><span>of the maximum possible water saved on 10 unseen test years</span></div>
-<div class="card"><b>7 in 10</b><span>leaks found on the same years</span></div>
-<div class="card"><b>8 in 10</b><span>alarms with a real leak inside the 300 m search area</span></div>
-<div class="card"><b>51%</b><span>of new leaks found within 30 days</span></div></div>
+<div class="cards"><div class="card"><b>73%</b><span>of alarms within 300 m of a running leak, against 52% for the same alarms at random junctions (10 unseen test years)</span></div>
+<div class="card"><b>28 a year</b><span>wrong-place alarms on the same years, against 50 for random junctions</span></div>
+<div class="card"><b>81%</b><span>of alarms with a running leak inside the 300 m search area, against 56% for a random area</span></div>
+<div class="card"><b>51%</b><span>of new leaks found within 30 days, against 37% by chance</span></div></div>
 <h2>How Guardian works</h2>
 <div class="stages"><div class="st"><b>1 Detect</b>twin vs sensors, night water balance</div><div class="st"><b>2 Diagnose</b>leak or faulty sensor?</div>
 <div class="st"><b>3 Confirm</b>night pressure test</div><div class="st"><b>4 Locate</b>300 m search area</div><div class="st"><b>5 Prioritise</b>water and money lost per day</div>
@@ -31,10 +31,30 @@ cause with a night pressure test before anyone digs. Advisory: an operator appro
 <a href="replay_ar.html" lang="ar" dir="rtl"><b>إعادة السنة بالعربية</b>الإعادة نفسها باللغة العربية.</a>
 <a href="ltown_2019.html"><b>L-Town 2019 report</b>The full-year report a utility would get: alarm table, search areas, map.</a>
 <a href="bktown.html"><b>Real network: BKTown, Belgium</b>17 real hydrant openings, located with pressure loggers only.</a></div>
+<h2>On real data</h2>
+<div class="cards"><div class="card"><b>7 of 11</b><span>trial stages placed within 300 m on four real leaks opened on a Bristol (UK) network, where a random point manages 2 in 100. The time of each leak was given, so this tests locating, not detecting; at 1 L/s it is at chance</span></div>
+<div class="card"><b>16 of 21</b><span>real mains repairs on a UK rural district had an alarm in the two weeks before; chance gives 11. Above chance, not statistically significant (p = 0.085). One district</span></div>
+<div class="card"><b>4 of 17</b><span>real hydrant openings in BKTown, Belgium, located within 300 m (9 of 17 within 1 km). Real-water location is still rough</span></div></div>
+<p class="small">Each of these ran once, with the code frozen beforehand. Bristol: 63 km network, 40 pressure loggers, 12-13 June 2024; hydrant
+positions fitted from a figure in the authors' thesis and not yet confirmed by them. UK district: 52 km, six pressure loggers, ten months.</p>
+<h2>A Saudi-compatible network</h2>
+<div class="cards"><div class="card"><b>88%</b><span>of leak water saved on a Jeddah zone with roof tanks, against 82% for the same alarms at random junctions (5 unseen simulated years)</span></div>
+<div class="card"><b>17.7 a year</b><span>wrong-place alarms on its 15.9 km, against 23.4 at random: about one every three weeks for a crew to check</span></div></div>
+<p class="small">Real Jeddah streets; the pipes are inferred, not utility data. The count of leaks found there (86%) is not evidence of skill:
+random alarms find 85%.</p>
+<h2>What it cannot do yet</h2>
+<ul><li>Nothing has run on real Saudi data. No Saudi utility publishes a network with its readings and repairs; one district is our request.</li>
+<li>Small leaks are slow, and on small-leak years our scoring cannot separate Guardian from random alarms.</li>
+<li>On small networks the count of "leaks found" does not show skill, so we do not quote it as a result.</li>
+<li>Roof tanks are approximated, and on/off supply is tested on one simulated network: water every second day failed our test.</li></ul>
 <h2>Results on 10 unseen test years</h2>
 <div class="wrap"><table><tr><th>Test year</th><th>Water saved</th><th>Leaks found</th><th>Wrong-place alarms</th></tr><tr><td>211</td><td>13.1%</td><td>3 of 26</td><td>0</td></tr><tr><td>212</td><td>84.9%</td><td>21 of 25</td><td>33</td></tr><tr><td>213</td><td>71.4%</td><td>23 of 31</td><td>19</td></tr><tr><td>214</td><td>76.0%</td><td>16 of 20</td><td>29</td></tr><tr><td>215</td><td>74.5%</td><td>29 of 37</td><td>37</td></tr><tr><td>216</td><td>77.2%</td><td>24 of 38</td><td>47</td></tr><tr><td>217</td><td>71.3%</td><td>20 of 33</td><td>23</td></tr><tr><td>218</td><td>90.6%</td><td>26 of 29</td><td>34</td></tr><tr><td>219</td><td>82.8%</td><td>25 of 32</td><td>24</td></tr><tr><td>220</td><td>74.6%</td><td>28 of 36</td><td>33</td></tr><tr><td><b>All 10 years</b></td><td><b>71.6%</b></td><td><b>215 of 307</b></td><td><b>27.9 a year</b></td></tr></table></div>
 <p class="small">Water saved: share of the maximum possible, official BattLeDIM scoring. Year 211: Guardian kept alarming near one
 large leak all year and missed the others; found after the test and reported, not tuned away.</p>
+<p class="small">Read the totals with their chance level (measured 15 Nov 2026: the same alarms, on the same dates, moved to random
+junctions and scored by the same rule). Water saved: 71.6% against 68.1% for random junctions (p = 0.06), so this figure alone is not
+clear of chance. Leaks found: 215 of 307 (70%), which random junctions also reach (69%). The skill is in where the alarms land:
+27.9 wrong-place alarms a year against 49.8, and 73% of alarms within 300 m of a running leak against 52%.</p>
 <h2>How the numbers were made</h2>
 <p>The method was developed on development years only, then frozen (code fingerprints recorded), and only then tested once on fresh
 simulated years it had never seen, scored with the official BattLeDIM rules. The test years come from our copy of the organisers'
@@ -42,4 +62,6 @@ simulator (it reproduces the official 2019 data to within 3 mm). Each wrong-plac
 test is there to catch them before anyone digs.</p>
 <p class="small">Built for the IECE 2026 Engineering Hackathon by the ChemE Club, Jubail Industrial College.
 L-Town and BattLeDIM: Vrachimis et al. 2022, JWRPM, doi 10.1061/(ASCE)WR.1943-5452.0001601; data Zenodo 4017659 (CC BY 4.0).
-BKTown: Mazaev et al. 2023, Water Supply; data Zenodo 7255403 (CC BY 4.0).</p></main></body></html>
+BKTown: Mazaev et al. 2023, Water Supply; data Zenodo 7255403 (CC BY 4.0).
+Bristol leak trials: Liu, Pecci and Stoianov, Imperial College London; data Zenodo 16737160 (CC BY 4.0).
+UK district: Wessex Water Leakage Scenario 3, Stream open data (CC BY 4.0).</p></main></body></html>
