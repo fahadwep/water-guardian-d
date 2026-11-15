@@ -13,28 +13,36 @@ p,li{color:var(--ink2)} a{color:var(--accent)} .lead{font-size:18px;color:var(--
 .stages{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px} .st{background:var(--card);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--ink2)} .st b{display:block;color:var(--ink);font-size:14px}
 .links{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px} .links a{display:block;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;text-decoration:none;color:var(--ink2)} .links a b{display:block;color:var(--accent);font-size:16px;margin-bottom:4px}
 img{max-width:100%;height:auto;border-radius:10px;background:#fff;border:1px solid var(--line)} table{border-collapse:collapse;width:100%;font-size:14px}
+.figd{background:#0D1B2A;border-radius:14px;padding:14px;border:1px solid var(--line)} .figd img,.figl img{border:0;background:none;display:block;margin:0 auto} .figl{background:#F3F6F5;border-radius:14px;padding:10px;max-width:640px;border:1px solid var(--line)}
 td,th{border-bottom:1px solid var(--line);padding:6px;text-align:left} .wrap{overflow-x:auto} .small{font-size:13px;color:var(--muted)}</style></head><body><div class="bar"><span class="brand"></span><a href="index.html">Water Guardian</a></div><main><h1>Water Guardian</h1>
 <p class="lead">A digital twin of a water network that detects leaks early, points crews to a 300 m search area and proves the
 cause with a night pressure test before anyone digs. Advisory: an operator approves every action.</p>
-<a class="btn" href="replay.html">Watch one year live</a><a class="btn ghost" href="replay.html#story">Start the guided story</a><a class="btn ghost" href="replay_ar.html" lang="ar">العربية</a>
+<a class="btn" href="replay.html">Watch one year live</a><a class="btn ghost" href="replay.html#story">Start the guided story</a><a class="btn ghost" href="replay_jeddah.html">Jeddah zone replay</a><a class="btn ghost" href="replay_ar.html" lang="ar">العربية</a>
 <div class="cards"><div class="card"><b>73%</b><span>of alarms within 300 m of a running leak, against 52% for the same alarms at random junctions (10 unseen test years)</span></div>
 <div class="card"><b>28 a year</b><span>wrong-place alarms on the same years, against 50 for random junctions</span></div>
 <div class="card"><b>81%</b><span>of alarms with a running leak inside the 300 m search area, against 56% for a random area</span></div>
 <div class="card"><b>51%</b><span>of new leaks found within 30 days, against 37% by chance</span></div></div>
 <h2>How Guardian works</h2>
+<div class="figd"><img src="figures/sub_pipeline_dark.png" alt="Sensors, digital twin, the gap, leak alarm, operator"></div>
 <div class="stages"><div class="st"><b>1 Detect</b>twin vs sensors, night water balance</div><div class="st"><b>2 Diagnose</b>leak or faulty sensor?</div>
 <div class="st"><b>3 Confirm</b>night pressure test</div><div class="st"><b>4 Locate</b>300 m search area</div><div class="st"><b>5 Prioritise</b>water and money lost per day</div>
 <div class="st"><b>6 Compare</b>isolate, lower pressure, monitor</div><div class="st"><b>7 Optimise</b>lowest safe pressure</div><div class="st"><b>8 Verify</b>second model, then advice</div></div>
 <p class="small">Stages 1 and 4 are the tested engine. Stages 2, 3 and 5-8 are development tools: shown in the replay, not part of the tested results.</p>
 <h2>See it</h2><div class="links">
 <a href="replay.html"><b>One year, watched live</b>L-Town 2019 day by day: map, alarms and their 8 stages, the real leaks on a switch, and a story mode.</a>
+<a href="replay_jeddah.html"><b>A Jeddah zone, watched live</b>Real Jeddah streets with inferred pipes and roof tanks: one simulated year, day by day. A demonstration, not a test result.</a>
 <a href="replay_ar.html" lang="ar" dir="rtl"><b>إعادة السنة بالعربية</b>الإعادة نفسها باللغة العربية.</a>
 <a href="ltown_2019.html"><b>L-Town 2019 report</b>The full-year report a utility would get: alarm table, search areas, map.</a>
 <a href="bktown.html"><b>Real network: BKTown, Belgium</b>17 real hydrant openings, located with pressure loggers only.</a></div>
+<h2>Guardian against chance</h2>
+<div class="figd"><img src="figures/sub_against_random_dark.png" alt="Guardian beside the same alarms placed at random"></div>
+<p class="small">Benchmark network, unseen simulated years. Grey bars: Guardian's own alarms, on the same dates, moved to random junctions. We show this for every number, because on a small network random alarms can look good.</p>
 <h2>On real data</h2>
 <div class="cards"><div class="card"><b>7 of 11</b><span>trial stages placed within 300 m on four real leaks opened on a Bristol (UK) network, where a random point manages 2 in 100. The time of each leak was given, so this tests locating, not detecting; at 1 L/s it is at chance</span></div>
 <div class="card"><b>16 of 21</b><span>real mains repairs on a UK rural district had an alarm in the two weeks before; chance gives 11. Above chance, not statistically significant (p = 0.085). One district</span></div>
 <div class="card"><b>4 of 17</b><span>real hydrant openings in BKTown, Belgium, located within 300 m (9 of 17 within 1 km). Real-water location is still rough</span></div></div>
+<div class="figl"><img src="figures/sub_bristol_map.png" alt="Bristol: where each leak was and where it was placed"></div>
+<p class="small">Bristol: each cross is a real leak opened at a hydrant, each dot is where the tool placed it at one flow stage. The two long red lines are 1 L/s stages, where it is at chance.</p>
 <p class="small">Each of these ran once, with the code frozen beforehand. Bristol: 63 km network, 40 pressure loggers, 12-13 June 2024; hydrant
 positions fitted from a figure in the authors' thesis and not yet confirmed by them. UK district: 52 km, six pressure loggers, ten months.</p>
 <h2>A Saudi-compatible network</h2>
