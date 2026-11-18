@@ -45,7 +45,7 @@ We gave Water Guardian's locator the time of each leak and the logger readings, 
 <aside id="side"></aside>
 </main>
 <footer>What this is: a display of one frozen test (our approved claim 17). Nothing is computed on this page. Limits: four leaks; the eleven stages are not independent; the hydrant positions were fitted from a figure in the authors' thesis and are not yet confirmed by them; the settings were tuned on two other leaks the day before; this is the known-time locator, not the year-round detector.
-"Explore first" is a search order built on the located junction (nearest pipe first); it is not a tested result.
+The survey order (nearest pipe first) is a convenience, not a result: on a fresh benchmark test it beat a random order only modestly.
 Network, loggers and leak trials: Liu, Pecci and Stoianov, Imperial College London, "Field Validation of Hydraulic Model-Based Leak Localization Methods in Water Distribution Networks", Zenodo 16737160, CC BY 4.0.
 <a href="index.html">Project page</a></footer>
 <script>
@@ -99,8 +99,8 @@ function side() {
   <span class="verdict ${hit ? "hit" : "miss"}">${hit ? "Within 300 m" : "Missed"}</span>
   <div class="q">Where Guardian placed it</div><p><b>${s.err.toLocaleString("en")} m</b> from the real leak, along the pipes.</p><p>A random junction: ${s.cmed.toLocaleString("en")} m (median), and within 300 m only ${s.c300}% of the time.</p>
   <p class="sub">The real hydrant ranked ${s.rank} of ${D.junctions.toLocaleString("en")} junctions in Guardian's list.</p>
-  <div class="q">Pipe to explore first</div><p><b style="color:var(--leak)">${so.length ? so[0].p[5] : "–"}</b>${so.length ? ` (${Math.round(so[0].len)} m, ${so[0].p[4]} mm)` : ""}${so.length > 1 ? ". Then: " + so.slice(1, 5).map(o => o.p[5]).join(", ") + "." : ""}</p>
-  <p class="sub">A search order: the pipes nearest to the placed point first. Shown thick on the map. Not a tested result.</p>
+  <div class="q">Survey order, nearest first</div><p><b style="color:var(--leak)">${so.length ? so[0].p[5] : "–"}</b>${so.length ? ` (${Math.round(so[0].len)} m, ${so[0].p[4]} mm)` : ""}${so.length > 1 ? ". Then: " + so.slice(1, 5).map(o => o.p[5]).join(", ") + "." : ""}</p>
+  <p class="sub">The pipes nearest to the placed point first, shown thick on the map. On a fresh benchmark test this order beat a random one only modestly, and the first pipe was almost never the leaking one: survey the whole circle.</p>
   <div class="q">What the loggers felt</div>${sens.map(q => `<div class="rowb"><span>${q[0]}</span><div><i style="left:0;width:${Math.min(100, Math.abs(q[1]) / mx * 100)}%;background:${q[2] <= -2 ? "#F07167" : "#3CC8C8"}"></i></div><span>${q[1]} cm</span></div>`).join("")}
   <p class="sub">Pressure during the leak minus just before and after, at the six loggers that moved most against their own noise. Red: a clear drop.</p>
   <div class="q">How to read this</div><p class="sub">${hit ? "The placed point (amber) is inside the dashed 300 m circle around the real hydrant (violet)." : "The placed point is outside the 300 m circle. At 1 L/s the pressure change is close to the loggers' noise, and the tool does no better than chance."} Size it estimated: ${s.size} L/s.</p>`;
