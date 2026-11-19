@@ -1,3 +1,4 @@
+self.WG_PYODIDE = new URL("pyodide/", self.location.href).href;
 /* The engine inside the page (static build only; site/build_static.py). A Web Worker starts Python in the browser (Pyodide),
    loads the project's own files unchanged (engine/detect_frozen_v5.py, engine/survey.py, guardian_app/shift_core.py,
    guardian_app/pack_ctx.py, guardian_app/i18n.py) and a town's data pack, and answers the page's shift requests.
