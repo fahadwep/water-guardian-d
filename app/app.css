@@ -441,3 +441,7 @@ details.log summary { cursor: pointer; font-size: 13px; font-weight: 700; color:
 .cplan { font-size: 13.5px; color: var(--ink2); margin-bottom: 6px; }
 .cfound { margin-top: 10px; font-size: 14.5px; color: var(--ok-ink); font-weight: 500; }
 @media (max-width: 1100px) { .strip li:nth-child(5) { grid-column: span 2; } }
+
+/* story: one district of a city */
+.district{display:flex;gap:16px;align-items:center;margin:4px 0 18px;padding:12px 14px;border:1px solid rgba(255,255,255,.16);border-radius:12px;background:rgba(255,255,255,.06)} .district svg{flex:none} .district p{margin:0;font-size:15px;line-height:1.5;max-width:74ch}
+@media (max-width:640px){.district{flex-direction:column;align-items:flex-start}}

@@ -17,7 +17,25 @@ window.WGS = (() => {
   }
   const ask = (op, a) => new Promise((yes, no) => { const id = ++seq; wait.set(id, { yes, no }); w().postMessage({ id, op, a }); });
   const file = async p => { const r = await fetch(p, { cache: "no-cache" }); if (!r.ok) throw new Error("not in this build"); return r.json(); };
+  /* The day-by-day feed: the states recorded by site/record_feed.py, played back at the chosen pace. Nothing is run here. */
+  const FEED = { rec: null, i: -1, on: false, every: 3, timer: null };
+  const feedStop = () => { FEED.on = false; clearInterval(FEED.timer); FEED.timer = null; };
+  async function feed(path, body) {
+    if (!FEED.rec) FEED.rec = await file("api/live.json");
+    const R = FEED.rec, n = R.states.length;
+    if (path === "/api/live/map") return R.map;
+    if (path === "/api/live/replay") {
+      feedStop();
+      if (body.action === "restart") FEED.i = -1;
+      if (body.action !== "stop") {
+        FEED.every = Math.min(Math.max(+body.every || 3, 0.1), 600); FEED.on = true; if (FEED.i < 0) FEED.i = 0;
+        FEED.timer = setInterval(() => { if (FEED.i < n - 1) FEED.i++; else feedStop(); }, FEED.every * 1000);
+      }
+    }
+    return { state: FEED.i >= 0 ? R.states[FEED.i] : null, feed: R.feed, can_replay: true, stored: R.made, replay: { running: FEED.on, every: FEED.every, recorded_days: R.recorded_days } };
+  }
   async function api(path, body) {
+    if (path.startsWith("/api/live")) return feed(path, body || {});
     if (path === "/api/config") return file("api/config.json");
     if (path === "/api/shift") return ask("new", { town: body.town, lang: body.lang, seed: Math.floor(Math.random() * 1073741824) });
     if (path.startsWith("/api/shift/")) return ask("act", { sid: path.slice(11), body });

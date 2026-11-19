@@ -86,6 +86,7 @@ function renderStory() {
     <div class="how">${how.map((x, i) => `<div>${HOW_SVG[i]}<b>${x[0]}</b><span>${x[1]}</span></div>`).join("")}</div>
     <p class="fine" style="margin-top:16px">${t("st_how_note")}</p></div>
   <div class="sheet watch"><h2 class="h2">${t("st_watch_h")}</h2><p class="lead">${t("st_watch_p")}</p>
+    <div class="district">${DISTRICT_SVG}<p>${t("st_district")}</p></div>
     <ol class="strip">${ws.map((x, i) => `<li class="${cls[i]}">${x}</li>`).join("")}</ol>
     <div class="row"><a class="btn pri big" href="#/shift?auto=1">▶ ${t("st_watch_auto")}</a><a class="btn big" href="#/shift">${t("st_watch_btn")}</a></div>
     <p class="fine">${t("st_watch_note")}</p>
@@ -106,6 +107,9 @@ function renderStory() {
 }
 
 /* ---------------- Evidence ---------------- */
+/* one district of a city: a plain grid of districts with one picked out (a picture of the idea, not a map) */
+const DISTRICT_SVG = `<svg viewBox="0 0 132 84" width="132" height="84" aria-hidden="true">${Array.from({ length: 15 }, (_, k) => { const c = k % 5, r = Math.floor(k / 5), on = k === 7;
+  return `<rect x="${4 + c * 25}" y="${4 + r * 26}" width="22" height="23" rx="4" fill="${on ? "#3B82F6" : "rgba(255,255,255,.14)"}" stroke="${on ? "#93C5FD" : "rgba(255,255,255,.28)"}"/>`; }).join("")}<circle cx="65" cy="41.5" r="3" fill="#fff"/></svg>`;
 function renderEvidence() {
   const Y = CFG.ltown_years || [], g1 = t("ev_g1"), g2 = t("ev_g2"), g3 = t("ev_g3"), g5 = t("ev_g5"), bk = t("ev_bk"), br = t("ev_br"), wx = t("ev_wx"), of = " " + t("of") + " ";
   const D1 = [[73, 52, 100, "73%", "52%", "clear"], [27.9, 49.8, 60, "27.9", "49.8", "clear", 1], [51, 37, 100, "51%", "37%", "clear"], [32, 11, 100, "32%", "11%", ""], [81, 56, 100, "81%", "56%", ""], [73, 65, 100, "73%", "65%", "weak"], [71.6, 68.1, 100, "71.6%", "68.1%", "unclear"]];
@@ -313,13 +317,12 @@ function brDraw() {
 /* ---------------- Day-by-day feed (live/nightly.py state, display only) ---------------- */
 const LF = { S: null, MAP: null, FOR: null, pts: [], hot: -1, timer: null, on: false };
 function renderFeed() {
-  if (window.WGS) { $("p-feed").innerHTML = `<div class="eyebrow">${t("lf_eye")}</div><h1 class="h1">${t("lf_h1")}</h1><p class="lead" style="max-width:92ch">${t("lf_sub")}</p><div class="sheet"><p class="lim" style="margin:0">${t("lf_static")}</p></div>`; return; }
   const lg = t("lf_leg");
   $("p-feed").innerHTML = `<div class="eyebrow">${t("lf_eye")}</div><h1 class="h1">${t("lf_h1")}</h1><p class="lead" style="max-width:92ch">${t("lf_sub")}</p>
-  <div id="lf_src" class="src"></div><div class="kpis" id="lf_kpis"></div>
+  ${window.WGS ? `<div class="sheet" style="margin-bottom:14px"><p class="lim" style="margin:0">${t("lf_static")}</p></div>` : ""}<div id="lf_src" class="src"></div><div class="kpis" id="lf_kpis"></div>
   <div class="mapside"><div class="mapbox"><canvas id="lf_map"></canvas>
       <div class="mapbar" id="lf_ctl" hidden><span class="pill"><button type="button" id="lf_start" class="pri">${t("lf_start")}</button><button type="button" id="lf_stop">${t("lf_stop")}</button><button type="button" id="lf_again">${t("lf_restart")}</button></span>
-        <span class="pill"><label for="lf_every">${t("lf_speed")}</label> <select id="lf_every"><option value="1">1 s</option><option value="3" selected>3 s</option><option value="6">6 s</option><option value="15">15 s</option><option value="60">60 s</option></select></span><span class="pill" id="lf_rstate" style="padding:5px 12px"></span></div>
+        <span class="pill"><label for="lf_every">${t("lf_speed")}</label> <select id="lf_every">${window.WGS ? `<option value="0.2">0.2 s</option>` : ""}<option value="1">1 s</option><option value="3" selected>3 s</option><option value="6">6 s</option><option value="15">15 s</option><option value="60">60 s</option></select></span><span class="pill" id="lf_rstate" style="padding:5px 12px"></span></div>
       <div class="legend">${lg.map((x, i) => `<span><i style="background:${["#E2532B", "#7448C8", "#1463D6"][i]}"></i>${x}</span>`).join("")}</div><div class="maptip" id="lf_tip" hidden></div></div>
     <aside><div class="q" style="margin-top:0">${t("lf_alarms_h")}</div><div id="lf_alarms" style="display:flex;flex-direction:column;gap:6px"></div><div class="q">${t("lf_checks_h")}</div><div id="lf_checks" style="display:flex;flex-direction:column;gap:8px"></div></aside></div>
   <p class="fine">${t("lf_foot")}</p>`;
