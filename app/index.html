@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Water Guardian</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Readex+Pro:wght@300;400;500;600;700&display=swap">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="#/" aria-label="Water Guardian">
+    <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M12 2.5c3.6 4.4 6.5 8 6.5 11.7a6.5 6.5 0 0 1-13 0C5.500 10.500 8.400 6.900 12 2.500z" fill="var(--water)"/><circle cx="12" cy="14.200" r="2.600" fill="none" stroke="#fff" stroke-width="1.500"/></svg>
+    <b data-t="brand"></b>
+  </a>
+  <nav id="nav" aria-label="Pages">
+    <a href="#/" data-r=""><i>1</i><span data-t="nav_story"></span></a>
+    <a href="#/shift" data-r="shift"><i>2</i><span data-t="nav_shift"></span></a>
+    <a href="#/evidence" data-r="evidence"><i>3</i><span data-t="nav_evidence"></span></a>
+    <a href="#/value" data-r="value"><i>4</i><span data-t="nav_value"></span></a>
+    <u></u>
+    <a class="more" href="#/bristol" data-r="bristol"><span data-t="nav_bristol"></span></a>
+    <a class="more" href="#/feed" data-r="feed"><span data-t="nav_feed"></span></a>
+    <a class="more" href="#/engine" data-r="engine"><span data-t="nav_engine"></span></a>
+  </nav>
+  <button id="lang" class="langbtn" type="button"></button>
+</header>
+
+<div id="offline" class="offline" hidden></div>
+
+<main id="main">
+  <section id="p-story" class="page"></section>
+  <section id="p-shift" class="page shift" hidden>
+    <div class="sbar">
+      <div class="seg" id="s_towns"></div>
+      <div class="seg" id="s_mode"></div>
+      <span class="grow"></span>
+      <div class="dayclock"><small id="s_dayl"></small><b id="s_day">0</b></div>
+      <button class="btn" id="s_play" type="button"></button>
+      <div class="seg sm" id="s_speed"></div>
+      <button class="btn" id="s_auto" type="button"></button>
+      <button class="btn dark" id="s_end" type="button"></button>
+    </div>
+    <div class="sgrid">
+      <div class="stage">
+        <div class="now" id="s_now">
+          <ol class="steps" id="s_steps"></ol>
+          <p class="say" id="s_say" aria-live="polite"></p>
+        </div>
+        <div class="mapwrap" id="s_mapwrap">
+          <canvas id="s_map"></canvas>
+          <div class="maptag" id="s_night" hidden></div>
+          <div class="maptip" id="s_tip" hidden></div>
+          <div class="maphint" id="s_hint" hidden></div>
+          <div class="legend" id="s_legend"></div>
+          <label class="chk mapopt" id="s_nameswrap" hidden><input type="checkbox" id="s_names"><span data-t="s_names"></span></label>
+        </div>
+        <div class="tline" id="s_tline"></div>
+      </div>
+      <aside class="panel" id="s_panel">
+        <div id="s_truth" hidden></div>
+        <div id="s_leak"></div>
+        <div id="s_alarms"></div>
+        <div id="s_focus"></div>
+        <div class="card" id="s_read">
+          <h4 data-t="s_read_h"></h4>
+          <div class="chart"><div class="ch"><b data-t="s_c1"></b><span data-t="s_c1s"></span></div><canvas id="s_cres"></canvas></div>
+          <div class="chart" id="s_flowbox"><div class="ch"><b data-t="s_c2"></b><span data-t="s_c2s"></span></div><canvas id="s_cflow"></canvas></div>
+        </div>
+        <details class="card log" id="s_log" hidden></details>
+        <p class="fine" id="s_note"></p>
+      </aside>
+    </div>
+  </section>
+  <section id="p-evidence" class="page" hidden></section>
+  <section id="p-value" class="page" hidden></section>
+  <section id="p-bristol" class="page" hidden></section>
+  <section id="p-feed" class="page" hidden></section>
+  <section id="p-engine" class="page" hidden></section>
+</main>
+
+<footer class="foot"><span data-t="foot"></span></footer>
+<script src="i18n.js"></script>
+<script src="bristol_data.js"></script>
+<script src="static_engine.js"></script>
+<script src="app.js"></script>
+<script src="shift.js"></script>
+</body>
+</html>
